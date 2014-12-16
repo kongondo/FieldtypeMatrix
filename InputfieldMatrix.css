@@ -1,0 +1,34 @@
+table.InputfieldMatrix {
+
+	width: 100%;
+}
+
+.InputfieldMatrix table tr {
+	border: none; 
+}
+
+.InputfieldMatrix th {
+	padding-bottom: 5px;
+	font-weight: bold; 
+}
+
+.InputfieldMatrix tr:not(.MatrixTBD):hover td {
+	background: #eee; 
+}
+
+.InputfieldMatrix input[type=text] {
+	width: 100%; 
+}
+.InputfieldMatrix th,
+.InputfieldMatrix td {
+	padding: 6px 2px; 
+	border-bottom: 1px solid #ddd; 
+}
+
+
+table.InputfieldMatrix tbody > tr > td.MatrixRowHeader {
+
+	padding-right: 10px;
+}
+
+

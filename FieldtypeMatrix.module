@@ -1,0 +1,337 @@
+<?php
+
+/**
+* FieldtypeMatrix for ProcessWire.
+*
+* This Fieldtype stores values from a 2D-matrix table.
+* Both the rows(x-axis) and columns (y-axis) are built from pages specified in the field's ConfigInputfields (Details tab).
+* Row and column values are stored as the respective pages IDs.
+* Their matrix values are stored as VARCHAR(255).
+*
+* @author Kongondo <kongondo@gmail.com>
+* @author Ryan Cramer 
+* 
+* Largely based on original code from Ryan Cramer's FieldtypeEvnents. 
+*
+* Lincensed under GNU/GPL v2.
+*
+* https://github.com/kongondo/FieldtypeMatrix
+* Created December 2014
+* 
+* ProcessWire 2.x
+* Copyright (C) 2011 by Ryan Cramer
+* Licensed under GNU/GPL v2, see LICENSE.TXT
+*
+* http://www.processwire.com
+*
+*/
+
+class FieldtypeMatrix extends FieldtypeMulti {
+
+	public static function getModuleInfo() {
+		return array(
+			'title' => 'Matrix',
+			'author' => 'Kongondo',
+			'version' => 1,
+			'href' => 'https://processwire.com/talk/topic/1234-xxxx/',
+			'summary' => 'Field that stores values in a 2D-matrix table in a page.',
+			'installs' => 'InputfieldMatrix', 
+			);
+	}
+
+	/**
+	 * Initialize this Fieldtype
+	 *
+	 */
+	
+	public function init() {
+		
+		parent::init();
+		$dir = dirname(__FILE__);
+		require_once("$dir/Matrix.php"); 
+		require_once("$dir/MatrixArray.php");
+	}
+
+	/**
+	 * Return the required Inputfield used to populate a field of this type
+	 *
+	 */
+	public function getInputfield(Page $page, Field $field) {
+		
+
+		$inputfield = $this->modules->get("InputfieldMatrix"); 
+
+		//our inputfield requires a Page and Field (most Inputfields don't)
+		$inputfield->setPage($page);//this is a method in InputfieldMatrix
+		$inputfield->setField($field);//this is a method in InputfieldMatrix
+		$inputfield->set('rows', $field->rows);//we'll use this to grab a selector string for finding matrix_row header pages from FieldtypeMatrix Details Tab
+		$inputfield->set('columns', $field->columns);//we'll use this to grab a selector string for finding matrix_column pages from FieldtypeMatrix Details Tab
+		$inputfield->set('rowLabelFieldName', $field->rowLabelFieldName);//we'll use this to label our matrix-row headers
+		$inputfield->set('columnLabelFieldName', $field->columnLabelFieldName);//we'll use this to label our matrix-column headers
+
+		return $inputfield; 
+	}
+
+	/**
+	 * Return a blank ready-to-populate version of a field of this type
+	 *
+	 */
+	public function getBlankValue(Page $page, Field $field) {
+		
+		$matrices = new MatrixArray($page);
+
+		$matrices->setTrackChanges(true);
+		return $matrices; 
+
+	}
+
+	/**
+	 * set the config option fields for this Field
+	 * These appear in the 'Details' Tab when editing an instance of this Field
+	 */
+	public function ___getConfigInputfields(Field $field) {
+		$inputfields = parent::___getConfigInputfields($field);
+
+		//selector for finding 'row' pages
+		$f = $this->modules->get("InputfieldText");
+		$f->attr('name', 'rows');
+		$f->attr('value', $field->rows);
+		$f->label = $this->_('Matrix Row Pages Selector');
+		$f->description = $this->_('Enter a selector to find pages for the matrix rows (y-axis).');
+		$f->notes = $this->_('Example: parent=/products/, template=product, sort=name');
+		$f->required = true;
+		$inputfields->append($f);
+
+		//selector for finding 'column' pages
+		$f = $this->modules->get("InputfieldText");
+		$f->attr('name', 'columns');
+		$f->attr('value', $field->columns);
+		$f->label = $this->_('Matrix Column Pages Selector');
+		$f->description = $this->_('Enter a selector to find pages for the matrix columns (x-axis).');
+		$f->notes = $this->_('Example: parent=/products/, template=product, sort=name');
+		$f->required = true;
+		$inputfields->append($f);
+
+		$defaultLabel = ' ' . $this->_('(default)');
+
+		//a select input for our column headers (i.e. the string to show as column headers)
+		$f = $this->modules->get('InputfieldSelect');
+		$f->setAttribute('name', 'rowLabelFieldName');
+		$f->setAttribute('value', $field->rowLabelFieldName); 
+		$f->label = $this->_('Matrix Row Headers Label Field');
+		$f->required = true; 
+		$f->description = $this->_('Select the page field that you want to be used to generate the row header labels in the matrix.');
+
+		if(wire('fields')->get('title')) {
+				$f->addOption('title', 'title' . $defaultLabel);
+				$f->addOption('name', 'name');
+				$titleIsDefault = true;
+			}
+
+		else {
+				$f->addOption('name', 'name' . $defaultLabel);
+				$titleIsDefault = false;
+		}
+		
+		$f->addOption('path', 'path'); 
+
+		foreach(wire('fields') as $field) {
+
+				//we only want to add fields that return strings (but not textareas!) - so no image, page fields, etc
+				if(!$field->type instanceof FieldtypeText) continue;
+				if($field->type instanceof FieldtypeTextarea) continue; 
+				if($titleIsDefault && $field->name == 'title') continue;
+				
+				$f->addOption($field->name);
+
+		}
+		
+		$inputfields->append($f);
+
+		//a select input for our column headers (i.e. the string to show as column headers) - @@todo - saved value not being selected in display! bug with showing two inputselects?
+		$f = $this->modules->get('InputfieldSelect');
+		$f->setAttribute('name', 'columnLabelFieldName');
+		$f->setAttribute('value', $field->columnLabelFieldName);
+		$f->label = $this->_('Matrix Column Headers Label Field');
+		$f->required = true; 
+		$f->description = $this->_('Select the page field that you want to be used to generate the column header labels in the matrix.');
+
+		if(wire('fields')->get('title')) {
+				$f->addOption('title', 'title' . $defaultLabel);
+				$f->addOption('name', 'name');
+				$titleIsDefault = true;
+		}
+
+		else {
+				$f->addOption('name', 'name' . $defaultLabel);
+				$titleIsDefault = false;
+		}
+		
+		$f->addOption('path', 'path'); 
+
+		foreach(wire('fields') as $field) {
+
+				//we only want to add fields that return strings (but not textareas!) - so no image, page fields, etc
+				if(!$field->type instanceof FieldtypeText) continue;
+				if($field->type instanceof FieldtypeTextarea) continue; 
+				if($titleIsDefault && $field->name == 'title') continue;
+				
+				$f->addOption($field->name);
+
+		}
+		
+		$inputfields->append($f); 
+
+		return $inputfields;
+	}
+
+
+        /**
+         * Given a raw value (value as stored in DB), return the value as it would appear in a Page object
+	 *
+         * @param Page $page
+         * @param Field $field
+         * @param string|int|array $value
+         * @return string|int|array|object $value
+         *
+         */
+        public function ___wakeupValue(Page $page, Field $field, $value) {
+
+
+				//if for some reason we already get a valid value, then just return it
+				if($value instanceof MatrixArray) return $value;
+
+				//start a blank value to be populated
+				$matrices = $this->getBlankValue($page, $field); 
+
+				//if we were given a blank value, then we've got nothing to do: just return a blank MatrixArray
+				if(empty($value) || !is_array($value)) return $matrices; 
+
+				//create new Matrix objects from each item in the array
+				foreach($value as $v) {
+					
+					$m = new Matrix();
+
+					$m->matrix_row = $v['data']; //note we are converting 'data' to 'matrix_row'
+					$m->matrix_column = $v['matrix_column'];
+					$m->matrix_value = $v['matrix_value'];
+					
+					$m->setTrackChanges(true);//track changes for individual matrix
+					$matrices->add($m);//add to matrices
+				
+				}//end foreach $value as $v
+
+				$matrices->resetTrackChanges();//reset track changes for all matrices
+
+                return $matrices;  
+        }
+
+        /**
+         * Given an 'awake' value, as set by wakeupValue, convert the value back to a basic type for storage in DB. 
+         *              
+         * @param Page $page
+         * @param Field $field
+         * @param string|int|array|object $value
+         * @return string|int
+         *
+         */
+        public function ___sleepValue(Page $page, Field $field, $value) {
+
+				$sleepValue = array();
+
+				//if we are given something other than an MatrixArray, 
+				//then just return a blank array
+				if(!$value instanceof MatrixArray) return $sleepValue;
+
+				//make the matrices sort by matrix_row ascending
+				$value->sort('matrix_row');		
+
+				//convert each Matrix to an array within sleepValue
+				foreach($value as $m) {
+
+						$sleepValue[] = array(
+							'data' => (int) $m->matrix_row, //note: matrix_row is becoming data which is a required column in a Fieldtype
+							'matrix_column' => $m->matrix_column,
+							'matrix_value' => $m->matrix_value,
+							
+						); 
+				}//end foreach $value as $m				
+			
+				return $sleepValue;
+        }
+
+	/**
+	 * Given a value, make it clean for storage within a Page
+	 *
+	 */
+	public function sanitizeValue(Page $page, Field $field, $value) {
+
+		//if given a blank value, return a valid blank value
+		if(empty($value)) return $this->getBlankValue($page, $field, $value); 
+
+		//if given something other than an MatrixArray, throw an error
+		if(!$value instanceof MatrixArray) {
+			throw new WireException("Value set to field '$field->name' must be an MatrixArray"); 
+		}
+
+		//#### - note that sanitization of individual fields within a given matrix is already - ####
+		//#### - performed by the Matrix::set() method, so we don't need to do anything else here. - ####
+
+		return $value;
+
+	}
+
+	/**
+	 * Format a value for output, called when a Page's outputFormatting is on
+	 *
+	 */
+	public function formatValue(Page $page, Field $field, $value) {
+		
+		//we actually don't need to do anything in here since each Matrix object
+		//is doing this work in the Matrix::get() method. But I've included this
+		//comment here just to explain where that is taking place. 
+
+		#the idea here is to transform, where necessary, a db value for display in the input field or on a rendered page	
+
+		return $value; 
+
+	}
+
+	/**
+	 * Return the database schema that defines a Matrix item
+	 *
+	 */
+	public function getDatabaseSchema(Field $field) {
+
+		$schema = parent::getDatabaseSchema($field); 
+
+		//'data' is a required field for any Fieldtype, and we're using it to represent our 'matrix_row' field (column in db)
+		$schema['data'] = 'INT NOT NULL DEFAULT 0';//we reuse this required field/column for matrix_row
+		$schema['matrix_column'] = 'INT NOT NULL DEFAULT 0';//matrix_column
+		$schema['matrix_value'] = "VARCHAR(255) DEFAULT ''";
+
+		//indexes, for any fields that need to be searchable from selectors
+		//make all our fields searchable
+		$schema['keys']['data'] = 'KEY data(data)';//searchable matrix_row = page->id of row
+		$schema['keys']['matrix_column'] = 'KEY matrix_column(matrix_column)';//searchable cc = $page->id of column
+		$schema['keys']['matrix_value'] = 'FULLTEXT KEY `matrix_value` (`matrix_value`)';
+
+		return $schema; 
+	}
+
+	/**
+	 * Method called when the field is database-queried from a selector 
+	 *
+	 */
+	public function getMatchQuery($query, $table, $subfield, $operator, $value) {
+
+		//If searching 'matrix_row' then assume our default (data) field 
+		if($subfield == 'matrix_row') $subfield = 'data';
+
+		return parent::getMatchQuery($query, $table, $subfield, $operator, $value); 
+	}
+
+
+
+}
+
