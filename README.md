@@ -7,7 +7,7 @@ In this **alpha version**, pages for building the rows/columns are only selectab
 Rows and column pages data are stored as their respective page->id. Matrix-values store any data (varchar(255)).
 This means that currently, to create different matrices, you would have to create a new field for each.
 This may change in the future to allow reusability of the same field across different pages (similar to ProcessWire Page Fields).
-This would allow users to select the pages they want to build their matrix's rows and columsn right within the page they are editing.
+This would allow users to select the pages they want to build their matrix's rows and columns right within the page they are editing.
 
 ## Example Usage
 1. A matrix table of clothes' colours (rows) vs their sizes (columns) and the price (value) for each combination.

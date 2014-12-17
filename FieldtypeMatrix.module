@@ -33,7 +33,7 @@ class FieldtypeMatrix extends FieldtypeMulti {
 			'title' => 'Matrix',
 			'author' => 'Kongondo',
 			'version' => 1,
-			'href' => 'https://processwire.com/talk/topic/1234-xxxx/',
+			'href' => 'https://processwire.com/talk/topic/8581-module-matrix-fieldtype-inputfield/',
 			'summary' => 'Field that stores values in a 2D-matrix table in a page.',
 			'installs' => 'InputfieldMatrix', 
 			);
