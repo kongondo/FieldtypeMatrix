@@ -1,15 +1,19 @@
 # FieldtypeMatrix
 
-This modules serves as an example of creating an editable table of 
-data as a Fieldtype and Inputfield in ProcessWire. In this case, we
-create a simple table of matrix each with date, location and notes.
-This pattern can be adapted to nearly any table of information. 
+This module is useful if you wish to save data in a **2D-matrix(grid)table**.
+The matrix table is made up of row and column headers of pages whose individual intersections form the 'matrix values'
+In this **alpha version**, pages for building the rows/columns are only selectable at the Field setup level (via a normal ProcessWire selector).
+Rows and column pages data are stored as their respective page->id. Matrix-values store any data (varchar(255)).
+This means that currently, to create different matrices, you would have to create a new field for each.
+This may change in the future to allow reusability of the same field across different pages (similar to ProcessWire Page Fields).
+This would allow users to select the pages they want to build their matrix's rows and columsn right within the page they are editing.
 
-Note that this module is intended as a proof-of-concept. If you 
-find it useful for the example scenario (matrix) then great, but 
-keep in mind it is not intended as a comprehensive matrix solution,
-where using ProcessWire pages may be a better fit. 
+## Example Usage
+1. A matrix table of clothes' colours (rows) vs their sizes (columns) and the price (value) for each combination.
+2. Car types (rows) vs engine size (columns) and their warranty (value).
+3. Gender (rows) vs Age (columns) and their favourite movie for each combination.
 
+The module allows the creation of matrix tables of any sizes (rows x columns).
 
 ## Install
 
@@ -19,64 +23,106 @@ where using ProcessWire pages may be a better fit.
    like. In our examples we named it simply "matrix". 
 4. Add the field to a template and edit a page using that template. 
 
-## Output 
+## API + Output 
 
 A typical output case for this module would work like this:
 
-``````
+```php
 foreach($page->matrix as $m) {
   echo "
     <p>
-    Date: $m->matrix_row<br />
-    Location: $m->matrix_column<br />
-    Notes: $m->matrix_value
+    Colour: $m->matrix_row<br />
+    Size: $m->matrix_column<br />
+    Price: $m->matrix_value
     </p>
     ";
 }
-``````
+```
 
-OR TABLE HERE?
+Of if you want to output a table
 
-``````
+```php
+//create array to build matrix
+$products = array();
 
+foreach($page->matrix as $m) $products[$m->matrix_row][$m->matrix_column] = $m->matrix_value;
 
-foreach($page->matrix as $m) {
-  echo "
-    <p>
-    Date: $m->matrix_row<br />
-    Location: $m->matrix_column<br />
-    Notes: $m->matrix_value
-    </p>
-    ";
+$tbody ='';//matrix rows
+$thcols = '';//matrix table column headers
+
+$i = 0;//set counter not to output extraneous column label headers
+$c = true;//set odd/even rows class
+foreach ($products as $row => $cols) {
+
+          //matrix table row headers (first column)
+          $rowHeader = $pages->get($row)->title;
+      
+          $tbody .= "<tr" . (($c = !$c) ? " class='even' " : '') . "><td class='MatrixRowHeader'>" . $rowHeader . "</td>";
+
+          $count = count($cols);//help to stop output of extra/duplicate column headers
+
+          foreach ($cols as $col => $value) {
+
+                    //matrix table column headers
+                    $columnHeader = $pages->get($col)->title;
+
+                    //avoid outputting extra duplicate columns
+                    if ($i < $count) $thcols .= "<th class='MatrixColumnHeader'>" . $columnHeader . "</th>";
+                      
+                    //output matrix_values
+                    $currency = $value > 0 ? '£' : '';
+                    $tbody .= "<td>" . $currency . $value . "</td>";
+                    
+                    $i++;
+
+          }
+
+          $tbody .= "</tr>";
+     
 }
-``````
 
-This module provides a default rendering capability as well, so that
-you can also do this (below) and get about the same result as above:
+//final matrix table for output
+ $tableOut =   "<table class='Matrix'>
+                <thead>
+                  <tr class=''>
+                    <th></th>
+                    $thcols
+                   </tr>
+                </thead>
+                <tbody>
+                  $tbody
+                </tbody>
+            </table>";
 
-``````
+
+echo $tableOut;
+
+```
+
+The module provides a default rendering capability as well, so that
+you can also do this (below) and get  a similar result as the first example above (without the captions).
+
+```php
 echo $page->matrix; 
-``````
+```
 
-...or this: 
+Or this
 
-``````
-foreach($page->matrix as $event) {
-  echo $event; 
+```php
+foreach($page->matrix as $m) {
+         echo $m; 
 }
-``````
+```
 
-## Finding matrix
+## Finding matrix items
 
-This fieldtype includes an indexed date field so that you can locate
-matrix by date or within a date range. 
+This fieldtype includes indexed row, column and value fields.
+This enables you to find matrix items by either row types (e.g. colours) or columns (e.g. sizes) or their values (e.g. price) or a combination of some/all of these. For instance:
 
-`````
-// find all pages that have expired matrix
-$results = $pages->find("matrix.date<" . time()); 
+```php
+//find all pages that have a matrix value of less than 1000
+$results = $pages->find("matrix.value<1000"); 
+ 
+```
 
-// find all pages with matrix in January, 2014
-$results = $pages->find("matrix.date>=2014-01-01, matrix.date<2014-02-01"); 
-`````
-
-
+Other more complex queries are possible, e.g. find all products that are either red or purple in colour, come in x-large size and are priced less than $50.
