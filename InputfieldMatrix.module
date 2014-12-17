@@ -102,7 +102,7 @@ class InputfieldMatrix extends Inputfield {
 
 		//throw error if column selector returns empty!
 		if (!count($columns)) {
-					$this->error($this->_('No column pages found with the selector set for \'Column Matrix\' pages for this Field. Amend your selector.'));
+					$this->error($this->_('No column pages found with the selector set in \'Column Matrix\' pages for this Field. Amend your selector.'));
 					return '<h4>Columns selector did not find any results!</h4>';
 		}
 		
@@ -149,7 +149,7 @@ class InputfieldMatrix extends Inputfield {
 									<td class=MatrixRowCount>" . $j. "</td>
 		            				<td>" . $rowLabel. "</td>";*///@@left here in case will switch to row counters in the future
 
-		            $tbody .= "<tr><td class='MatrixRowHeader'>" . $rowLabel. "</td>";
+		            $tbody .= "<tr><td class='MatrixRowHeader'>" . $rowLabel . "</td>";
 
 		            $count = count($cols);//help to stop output of extra/duplicate column headers
 
@@ -161,7 +161,7 @@ class InputfieldMatrix extends Inputfield {
 		            			//if we have a column label from selected field show it otherwise show title
 		            			$columnLabel = $ch->$columnHeaderLabel ? $ch->$columnHeaderLabel : $ch->title;
 				            	//avoid outputting extra duplicate columns
-				            	if ($i < $count) $thcols .= "<th class='MatrixColumn'>" . $columnLabel . "</th>";
+				            	if ($i < $count) $thcols .= "<th class='MatrixColumnHeader'>" . $columnLabel . "</th>";
 				            		
 				                //input name will be in the format 'R5282_C5289' to match row and column page IDs respectively
 				                #$tbody .= "<td><input type='text' name='matrix[R" . $rh->id . "_C" . $ch->id . "]' value='" . $value . "'></td>";
@@ -180,7 +180,7 @@ class InputfieldMatrix extends Inputfield {
 		 $out =   "<table class='InputfieldMatrix'>
 		                <thead>
 		                  <tr class=''>
-		                    <th id='MatrixColumnFirst'></th>
+		                    <th></th>
 		                    $thcols
 		                   </tr>
 		                </thead>
@@ -205,14 +205,11 @@ class InputfieldMatrix extends Inputfield {
 
 			$name = 'matrix_' . $this->attr('name');
 
-			/*echo $name;
-			exit;*/
-
 			$matrices = $this->field->type->getBlankValue($this->page, $this->field);
 
 			foreach ($input->{"{$name}"} as $key => $value) {
 
-					//$key is in the format R1234_C1234 reflecting rown and column pages' IDs respectively
+					//$key is in the format R1234_C1234 reflecting row and column pages' IDs respectively
 						
 					//create a new matrix and add it to our matrices
 					$m = new Matrix();
@@ -222,14 +219,13 @@ class InputfieldMatrix extends Inputfield {
 					$row = str_replace('R', NULL, $rowCol[0]);//clean row page ID
 					$column = str_replace('C', NULL, $rowCol[1]);//clean column page ID
 
-					$m->matrix_row = (int) $row;//@@todo - do i need to sanitize here as well since done in Matrix::set() too?
+					$m->matrix_row = (int) $row;//@@todo - don't really need to sanitize here as well since done in Matrix::set() too?
 					$m->matrix_column = (int) $column;//@@todo - ditto
 					$m->matrix_value = $value;
 
 					$matrices->add($m);//add matrix to MatrixArray
 
 			}//end foreach
-
 		
 		//if the string values of the processed matrices are different from the previous,
 		//or if any matrices have been deleted, then flag this Inputfield as changed

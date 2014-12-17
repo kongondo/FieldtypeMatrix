@@ -12,7 +12,7 @@ table.InputfieldMatrix {
 	font-weight: bold; 
 }
 
-.InputfieldMatrix tr:not(.MatrixTBD):hover td {
+.InputfieldMatrix tr:hover td {
 	background: #eee; 
 }
 
@@ -26,7 +26,7 @@ table.InputfieldMatrix {
 }
 
 
-table.InputfieldMatrix tbody > tr > td.MatrixRowHeader {
+.InputfieldMatrix tbody > tr > td.MatrixRowHeader {
 
 	padding-right: 10px;
 }
