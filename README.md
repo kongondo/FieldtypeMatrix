@@ -2,7 +2,8 @@
 
 This module is useful if you wish to save data in a **2D-matrix(grid)table**.
 The matrix table is made up of row and column headers of pages whose individual intersections form the 'matrix values'
-In this **alpha version**, pages for building the rows/columns are only selectable at the Field setup level (via a normal ProcessWire selector).
+
+In this **alpha version**, pages for building the rows/columns are only selectable at the Field setup level (Details Tab) (via a normal ProcessWire selector).
 Rows and column pages data are stored as their respective page->id. Matrix-values store any data (varchar(255)).
 This means that currently, to create different matrices, you would have to create a new field for each.
 This may change in the future to allow reusability of the same field across different pages (similar to ProcessWire Page Fields).
@@ -14,6 +15,8 @@ This would allow users to select the pages they want to build their matrix's row
 3. Gender (rows) vs Age (columns) and their favourite movie for each combination.
 
 The module allows the creation of matrix tables of any sizes (rows x columns).
+The rows and columns dynamically grow/shrink depending on the addition of row/column pages that match the selector set up in the Field's 'Details Tab'.
+Currently, if such pages are deleted/trashed/hidden/unpublished, their data (and presence) in the matrix are also deleted.
 
 ## Install
 
