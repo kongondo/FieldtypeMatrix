@@ -142,7 +142,7 @@ This enables you to find matrix items by either row types (e.g. colours) or colu
 
 ```php
 //find all pages that have a matrix value of less than 1000
-$results = $pages->find("matrix.value<1000"); 
+$results = $pages->find("matrix.matrix_value<1000"); 
  
 ```
 
