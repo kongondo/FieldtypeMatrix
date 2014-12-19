@@ -29,8 +29,8 @@ class InputfieldMatrix extends Inputfield {
 		return array(
 			'title' => 'Matrix',
 			'author' => 'Kongondo',
-			'version' => 1,
-			'href' => 'https://processwire.com/talk/topic/1234-xxxx/',
+			'version' => 2,
+			'href' => 'https://processwire.com/talk/topic/8581-module-matrix-fieldtype-inputfield/',
 			'summary' => 'Input field for a 2D-matrix.',
 			'requires' => 'FieldtypeMatrix', 
 			);
@@ -55,57 +55,119 @@ class InputfieldMatrix extends Inputfield {
 	 */
 	public function ___render() {
 
-		//get our saved matrix values
+		//prepare some variables
 		$values = $this->attr('value');
 		$pages = wire('pages');
-		$dbMatrix = array();//for storing row/column values already saved in db
-
-		foreach($values as $m) {
-						
-						//remove matrix-rows that are no longer needed i.e. 'unpublished', 'hidden', 'deleted' or 'trashed'
-						$rp = $pages->get($m->matrix_row);
-						if (!$rp || $rp->is(Page::statusUnpublished) || $rp->isHidden() || $rp->isTrash()) continue;
-						//if (!$rp || $rp->is('unpublished') || $rp->is('hidden')) continue;//syntax will only work in PW 2.5+ ?
-
-						$dbMatrix[$m->matrix_row][$m->matrix_column] = $m->matrix_value;
-
-						//remove matrix-columns that are no longer needed i.e. 'unpublished', 'hidden', 'deleted' or 'trashed'
-						$cp = $pages->get($m->matrix_column);
-						if (!$cp || $cp->is(Page::statusUnpublished) || $cp->isHidden() || $cp->isTrash()) unset($dbMatrix[$m->matrix_row][$m->matrix_column]);
-
-		}
+		$page = $this->page;
+		$rowsParent = '';
+		$columnsParent = '';
 		
-		//creat our default matrix with blank values (i.e. blank matrix->value)
-		$defaultMatrix = array();
-		
+		$parentRowColumnSelector = $this->parentRowColumnFieldName;//this property was set in FieldtypeMatrix getInputfield()
 		$rowSelector = $this->rows;//this property was set in FieldtypeMatrix getInputfield()
 		$columnSelector = $this->columns;//this property was set in FieldtypeMatrix getInputfield()
 		
-		
 		$editURL = $this->wire('config')->urls->admin . 'setup/field/edit?id=' . $this->field->id;
 
+		//in neither a Page Field nor selectors for finding pages to build matrix rows/columns specified, return feedback to user
 		//@@todo - use error instead?
-		if(!$rowSelector || !$columnSelector) return '<h4>You need to input selectors to find pages to show in your matrix table. See this <a href="' . $editURL .'">Field\'s Details Tab.</a></h4>';
+		if((!$parentRowColumnSelector) && (!$rowSelector || !$columnSelector)) return '<h4>You need to either input selectors or a Page Field to find pages to show in your matrix table. See this <a href="' . $editURL .'">Field\'s Details Tab.</a></h4>';
 
-		//find all matrix-row pages
-		$rows = $pages->find($rowSelector); //pw will throw an exception here if the selector is not valid
+		//if Page Field specified, we use that to find the children pages of the specified row and column parent pages respectively
+		if ($parentRowColumnSelector) {
+							
+				### first we deal with errors ###
 
-		//find all matrix-column pages
-		$columns = $pages->find($columnSelector); //pw will throw an exception here if the selector is not valid
+				//if the page field does not return a PageArray, we throw an error, return		
+				if(!$page->$parentRowColumnSelector instanceof PageArray) {
+
+					$this->error($this->_('Only a Page Field can be used to specify the rows and columns parent pages for building your matrix! Confirm that you specified a Multiplepage Field for this Field. See this <a href="' . $editURL .'">Field\'s Details Tab.</a>'), Notice::allowMarkup);
+					return;
+
+				}
+
+				//if less than 2 matrix parent pages selected (we need one for rows and the other for columns), throw an error, return
+				if(count($page->$parentRowColumnSelector) < 2) {
+
+					$this->error($this->_('You need to select 1 matrix rows parent and 1 matrix columns parent.'));
+					return;
+
+				}
+
+				### rows parent ###
+				$rowsParent = $page->$parentRowColumnSelector->first();//the first selected page is treated as the row pages parent
+				
+				//if for some reason specified $rowsParent does not exist throw an error, return
+				if(!$rowsParent) {
+
+					$this->error($this->_('The specified matrix row parent page was not found. Confirm it exists or specify another.'));
+					return;
+
+				}
+				
+				//if $rowsParent does not have children, throw an error, return
+				if(!$rowsParent->numChildren) {
+
+					$this->error($this->_('The specified matrix rows parent does not have children. You need to first create its child pages.'));
+					return;
+
+				}
+
+				#### columns parent ####
+				$columnsParent = $page->$parentRowColumnSelector->getNext($rowsParent);//the second selected page is treated as the column pages parent
+
+				//if for some reason specified $columnsParent does not exist throw an error, return
+				if(!$columnsParent) {
+
+					$this->error($this->_('The specified matrix columns parent page was not found. Confirm it exists or specify another.'));
+					return;
+
+				}
+				
+				//if $columnsParent does not have children, throw an error, return
+				if(!$columnsParent->numChildren) {
+
+					$this->error($this->_('The specified matrix column parent does not have children. You need to first create its child pages.'));
+					return;
+
+				}
+				
+				##### -if we made it here, we are good to go ####
+				//find all matrix-row pages
+				$rows = $rowsParent->children;
+
+				//find all matrix-column pages
+				$columns = $columnsParent->children;
+	
+		}//end if a Page Field was specified
+
+		//if Page Field not specified, we use specified row/column selectors instead
+		else {
+
+				//find all matrix-row pages
+				$rows = $pages->find($rowSelector); //ProcessWire will throw an exception here if the selector is not valid
+
+				//find all matrix-column pages
+				$columns = $pages->find($columnSelector); //ProcessWire will throw an exception here if the selector is not valid
+
+				//throw error if row selector returns empty!
+				if (!count($rows)) {
+							$this->error($this->_('No row pages found with the selector set in \'Row Matrix pages\' for this Field. Amend your selector.'));
+							return '<h4>Rows selector did not find any results!</h4>';
+				}
+
+				//throw error if column selector returns empty!
+				if (!count($columns)) {
+							$this->error($this->_('No column pages found with the selector set in \'Column Matrix\' pages for this Field. Amend your selector.'));
+							return '<h4>Columns selector did not find any results!</h4>';
+				}
+
+
+		}//end else we use row/column selectors
 		
-
-		//throw error if row selector returns empty!
-		if (!count($rows)) {
-					$this->error($this->_('No row pages found with the selector set in \'Row Matrix pages\' for this Field. Amend your selector.'));
-					return '<h4>Rows selector did not find any results!</h4>';
-		}
-
-		//throw error if column selector returns empty!
-		if (!count($columns)) {
-					$this->error($this->_('No column pages found with the selector set in \'Column Matrix\' pages for this Field. Amend your selector.'));
-					return '<h4>Columns selector did not find any results!</h4>';
-		}
 		
+		//creat our default matrix with blank values (i.e. blank matrix->value)
+		$defaultMatrix = array();
+
 		//get the rows and columns to build our empty-values default matrix
 		foreach($rows as $row) {
 
@@ -120,9 +182,41 @@ class InputfieldMatrix extends Inputfield {
 
 		}
 
+		//get our db saved matrix values
+		$dbMatrix = array();//for storing row/column values already saved in db
+
+		foreach($values as $m) {
+
+						//get the row page
+						$rp = $pages->get($m->matrix_row);
+						
+						//in case the matrix rows parent was changed and is different from the rows parent of the saved db values
+						//we skip such rows in readiness for deletion
+						//we only do this if a Page Field was used to select matrix rows (difficult if a selector was used - no problem since assuming only supersuser can edit selector in Page Field)
+						if($rowsParent && $rp->parent != $rowsParent) continue;
+
+						//remove matrix-rows that are no longer needed i.e. 'unpublished', 'hidden', 'deleted' or 'trashed'
+						if (!$rp || $rp->is(Page::statusUnpublished) || $rp->isHidden() || $rp->isTrash()) continue;
+						//if (!$rp || $rp->is('unpublished') || $rp->is('hidden')) continue;//syntax will only work in PW 2.5+ ?
+
+						$dbMatrix[$m->matrix_row][$m->matrix_column] = $m->matrix_value;
+
+						//get the column page
+						$cp = $pages->get($m->matrix_column);
+
+						//remove matrix-columns that are no longer needed i.e. 'unpublished', 'hidden', 'deleted' or 'trashed'
+						if (!$cp || $cp->is(Page::statusUnpublished) || $cp->isHidden() || $cp->isTrash()) unset($dbMatrix[$m->matrix_row][$m->matrix_column]);
+						
+						//in case the matrix columns parent was changed and is different from the columns parent of the saved db values
+						//we remove such columns in readiness for deletion
+						//we only do this if a Page Field was used to select matrix columns (ditto above)
+						if($columnsParent && $cp->parent != $columnsParent) unset($dbMatrix[$m->matrix_row][$m->matrix_column]);
+
+		}
+
 		//#########	CREATE MATRIX TABLE #########
 
-		//prepare our final matrix to output to page edit Input
+		//prepare our final matrix to output to page edit InputfieldMatrix
 		//we recursively replace defaultMatrix blank values with dbMatrix values where applicable (matched array keys)
 		//'new' (i.e. not in $dbMatrix) default row/column combinations are preserved and added to final matrix
 		//note: values previously saved using a different selector will still be present!
