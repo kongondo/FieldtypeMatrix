@@ -29,7 +29,7 @@ class InputfieldMatrix extends Inputfield {
 		return array(
 			'title' => 'Matrix',
 			'author' => 'Kongondo',
-			'version' => 2,
+			'version' => 3,
 			'href' => 'https://processwire.com/talk/topic/8581-module-matrix-fieldtype-inputfield/',
 			'summary' => 'Input field for a 2D-matrix.',
 			'requires' => 'FieldtypeMatrix', 
@@ -312,6 +312,9 @@ class InputfieldMatrix extends Inputfield {
 
 					$row = str_replace('R', NULL, $rowCol[0]);//clean row page ID
 					$column = str_replace('C', NULL, $rowCol[1]);//clean column page ID
+
+					//if value empty, we skip the record
+					if($value == '') continue;
 
 					$m->matrix_row = (int) $row;//@@todo - don't really need to sanitize here as well since done in Matrix::set() too?
 					$m->matrix_column = (int) $column;//@@todo - ditto
