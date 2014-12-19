@@ -29,11 +29,7 @@ class InputfieldMatrix extends Inputfield {
 		return array(
 			'title' => 'Matrix',
 			'author' => 'Kongondo',
-<<<<<<< HEAD
-			'version' => 1,
-=======
 			'version' => 2,
->>>>>>> origin/dev
 			'href' => 'https://processwire.com/talk/topic/8581-module-matrix-fieldtype-inputfield/',
 			'summary' => 'Input field for a 2D-matrix.',
 			'requires' => 'FieldtypeMatrix', 
