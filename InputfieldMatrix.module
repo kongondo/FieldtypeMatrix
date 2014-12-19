@@ -302,19 +302,18 @@ class InputfieldMatrix extends Inputfield {
 			$matrices = $this->field->type->getBlankValue($this->page, $this->field);
 
 			foreach ($input->{"{$name}"} as $key => $value) {
+					
+					//if value empty, we skip the record
+					if($value == '') continue;
 
 					//$key is in the format R1234_C1234 reflecting row and column pages' IDs respectively
-						
-					//create a new matrix and add it to our matrices
-					$m = new Matrix();
-
 					$rowCol = explode('_', $key);//[0]=>R1234, [1]=>C1234
 
 					$row = str_replace('R', NULL, $rowCol[0]);//clean row page ID
 					$column = str_replace('C', NULL, $rowCol[1]);//clean column page ID
 
-					//if value empty, we skip the record
-					if($value == '') continue;
+					//create a new matrix and add it to our matrices
+					$m = new Matrix();
 
 					$m->matrix_row = (int) $row;//@@todo - don't really need to sanitize here as well since done in Matrix::set() too?
 					$m->matrix_column = (int) $column;//@@todo - ditto
