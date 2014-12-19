@@ -149,6 +149,10 @@ $results = $pages->find("matrix.value<1000");
 Other more complex queries are possible, e.g. find all products that are either red or purple in colour, come in x-large size and are priced less than $50.
 
 ##Changelog
+
+###Version 0.0.3
+Corrected oversight whereby records with empty values were being saved to the database.
+
 ###Version 0.0.2
 Added feature to select matrix row and column parent pages via a named Multiplepage Field select present on the page containing a matrix table.
 
