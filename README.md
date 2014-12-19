@@ -1,13 +1,31 @@
 # FieldtypeMatrix
 
-This module is useful if you wish to save data in a **2D-matrix(grid)table**.
+##Note: Alpha version!
+
+This module is useful if you wish to save data in a **2D-matrix(grid) table**.
 The matrix table is made up of row and column headers of pages whose individual intersections form the 'matrix values'
 
-In this **alpha version**, pages for building the rows/columns are only selectable at the Field setup level (Details Tab) (via a normal ProcessWire selector).
-Rows and column pages data are stored as their respective page->id. Matrix-values store any data (varchar(255)).
-This means that currently, to create different matrices, you would have to create a new field for each.
-This may change in the future to allow reusability of the same field across different pages (similar to ProcessWire Page Fields).
-This would allow users to select the pages they want to build their matrix's rows and columsn right within the page they are editing.
+Pages for building the rows/columns can be selected in one of two ways. **These methods are set up in the Field's 'Details Tab':**
+
+**1. Use a valid ProcessWire selector.**
+Here you enter valid ProcessWire selectors for finding pages to build your matrix rows and columns respectively in the relevant input fields found in your matrix field's 'Details Tab'.
+If you use this method, it means all instances of the field across different templates and pages will have identical rows and columns.
+This also means that if you wanted to create matrices with different rows and columns, you would have to create a new field for each.
+**2. Specify a Multiplepage field for row/column parent pages selections**
+If used, this method overrides method #1 above.
+The method allows you to reuse the same matrix field to create matrix tables made up of different rows and columns on a page by page basis.
+To use the method, you first specify the name (e.g. **product_select**) of a valid **Multiplepage field** that will hold the parent pages of **both your rows and columns pages**.
+Make sure to first add that Multiplepage field (**product_select**) to the template(s) of the page(s) where you will be building your matrices.
+Go and edit your matrix page. No matrix will be shown until you first select **2 pages** in your **page_select** and save the page.
+The first page selected will be assumed to be your matrix rows pages parent and the second one your columns pages parent. Any additional selected pages will be ignored. 
+If either of the parent pages you selected does not have children, you will get an error.
+**If available, the children of the selected row/column pages respectively will be used to build your matrix table.**
+
+**Please note that** if you changed or reordered the pages in your **product_select** page field and saved the page, a new matrix will be built using the children of the newly specified row and column pages and **ALL your old values for the specific page you are editing will be deleted in the database.**
+
+By using this method, if you've properly configured your **product_select**, you can build a large variety of matrix tables on a page by page basis as long as those pages are using a template with the **product_select** page field.
+
+FieldtypeMatrix stores row and column pages data as their respective page->id. Matrix-values store any data (varchar(255)).
 
 ## Example Usage
 1. A matrix table of clothes' colours (rows) vs their sizes (columns) and the price (value) for each combination.
@@ -129,3 +147,16 @@ $results = $pages->find("matrix.value<1000");
 ```
 
 Other more complex queries are possible, e.g. find all products that are either red or purple in colour, come in x-large size and are priced less than $50.
+
+##Changelog
+###Version 0.0.2
+Added feature to select matrix row and column parent pages via a named Multiplepage Field select present on the page containing a matrix table.
+
+###Version 0.0.1
+Initial Alpha Version.
+
+##Resources
+ [Support Forum](https://processwire.com/talk/topic/8581-module-matrix-fieldtype-inputfield/)
+
+##License
+GPL(2)
