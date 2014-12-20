@@ -32,7 +32,7 @@ class FieldtypeMatrix extends FieldtypeMulti {
 		return array(
 			'title' => 'Matrix',
 			'author' => 'Kongondo',
-			'version' => 3,
+			'version' => 4,
 			'href' => 'https://processwire.com/talk/topic/8581-module-matrix-fieldtype-inputfield/',
 			'summary' => 'Field that stores values in a 2D-matrix table in a page.',
 			'installs' => 'InputfieldMatrix', 
@@ -329,7 +329,7 @@ class FieldtypeMatrix extends FieldtypeMulti {
 
 		//indexes, for any fields that need to be searchable from selectors
 		//make all our fields searchable
-		$schema['keys']['data'] = 'KEY data(data)';//searchable matrix_row = page->id of row
+		$schema['keys']['data'] = 'KEY data(data)';//searchable row = page->id of matrix_row
 		$schema['keys']['matrix_column'] = 'KEY matrix_column(matrix_column)';//searchable cc = $page->id of column
 		$schema['keys']['matrix_value'] = 'FULLTEXT KEY `matrix_value` (`matrix_value`)';
 

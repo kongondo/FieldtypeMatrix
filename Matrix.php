@@ -54,7 +54,7 @@ class Matrix extends WireData {
 	}
 
 	/**
-	 * Retrieve a value from the matrix: matrix_row, matrix_column, matrix_value
+	 * Retrieve a value from the matrix: matrix_row, matrix_column, vamatrix_valuelue
 	 *
 	 */
 	public function get($key) {
