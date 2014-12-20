@@ -150,6 +150,9 @@ Other more complex queries are possible, e.g. find all products that are either 
 
 ##Changelog
 
+###Version 0.0.4
+Code optimisations, cosmetic cleanups.
+
 ###Version 0.0.3
 Corrected oversight whereby records with empty values were being saved to the database.
 
