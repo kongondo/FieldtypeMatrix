@@ -29,7 +29,7 @@ class InputfieldMatrix extends Inputfield {
 		return array(
 			'title' => 'Matrix',
 			'author' => 'Kongondo',
-			'version' => 4,
+			'version' => 5,
 			'href' => 'https://processwire.com/talk/topic/8581-module-matrix-fieldtype-inputfield/',
 			'summary' => 'Input field for a 2D-matrix.',
 			'requires' => 'FieldtypeMatrix', 
@@ -50,10 +50,11 @@ class InputfieldMatrix extends Inputfield {
 	}
 
 	/**
-	 * Render the entire input area for a Matrix
+	 * Build an array for outputting a Matrix Table/Grid
 	 *
 	 */
-	public function ___render() {
+
+	public function mergeMatrix() {
 
 		//prepare some variables
 		$values = $this->attr('value');
@@ -67,69 +68,43 @@ class InputfieldMatrix extends Inputfield {
 		$columnSelector = $this->columns;//this property was set in FieldtypeMatrix getInputfield()
 		
 		$editURL = $this->wire('config')->urls->admin . 'setup/field/edit?id=' . $this->field->id;
+		
+		### first we deal with errors. We'll return these as strings to oupput in $this->error() in render() ###
 
-		//in neither a Page Field nor selectors for finding pages to build matrix rows/columns specified, return feedback to user
-		//@@todo - use error instead?
-		if((!$parentRowColumnSelector) && (!$rowSelector || !$columnSelector)) return '<h4>You need to either input selectors or a Page Field to find pages to show in your matrix table. See this <a href="' . $editURL .'">Field\'s Details Tab.</a></h4>';
+		//in neither a Page Field nor selectors for finding pages to build matrix rows/columns specified set error message
+		if((!$parentRowColumnSelector) && (!$rowSelector || !$columnSelector))			
+				return '<a href="' . $editURL .'">' . 	$this->_('Check the Details Tab of the field') . '</a> ' . $this->field->name . 
+														$this->_('. You need to either use selectors or a Page Field to find pages to show in your matrix table.');		
 
 		//if Page Field specified, we use that to find the children pages of the specified row and column parent pages respectively
-		if($parentRowColumnSelector) {
-							
-				### first we deal with errors ###
+		if($parentRowColumnSelector) {							
 
-				//if the page field does not return a PageArray, we throw an error, return		
-				if(!$page->$parentRowColumnSelector instanceof PageArray) {
+				//if the page field does not return a PageArray, set error message	
+				if(!$page->$parentRowColumnSelector instanceof PageArray)
+					return '<a href="' . $editURL .'">' . 	$this->_('Check the Details Tab of the field') . '</a> ' . $this->field->name . 
+															$this->_('. Only a Page Field can be used to specify the rows and columns parent pages for building your matrix! Confirm that you specified a Multiplepage Field.');
 
-					$this->error($this->_('Only a Page Field can be used to specify the rows and columns parent pages for building your matrix! Confirm that you specified a Multiplepage Field for this Field. See this <a href="' . $editURL .'">Field\'s Details Tab.</a>'), Notice::allowMarkup);
-					return;
-
-				}
-
-				//if less than 2 matrix parent pages selected (we need one for rows and the other for columns), throw an error, return
-				if(count($page->$parentRowColumnSelector) < 2) {
-
-					$this->error($this->_('You need to select 1 matrix rows parent and 1 matrix columns parent.'));
-					return;
-
-				}
+				//if less than 2 matrix parent pages selected (we need one for rows and the other for columns) set error message
+				if(count($page->$parentRowColumnSelector) < 2) return $this->_('You need to select 1 matrix rows parent and 1 matrix columns parent.');
 
 				### rows parent ###
 				$rowsParent = $page->$parentRowColumnSelector->first();//the first selected page is treated as the row pages parent
 				
-				//if for some reason specified $rowsParent does not exist throw an error, return
-				if(!$rowsParent) {
-
-					$this->error($this->_('The specified matrix row parent page was not found. Confirm it exists or specify another.'));
-					return;
-
-				}
+				//if for some reason specified $rowsParent does not exist set error message
+				if(!$rowsParent) return $this->_('The specified matrix row parent page was not found. Confirm it exists or specify another.');
 				
-				//if $rowsParent does not have children, throw an error, return
-				if(!$rowsParent->numChildren) {
-
-					$this->error($this->_('The specified matrix rows parent does not have children. You need to first create its child pages.'));
-					return;
-
-				}
+				//if $rowsParent does not have children set error message
+				if(!$rowsParent->numChildren) return $this->_('The specified matrix rows parent does not have children. You need to first create its child pages.');
 
 				#### columns parent ####
 				$columnsParent = $page->$parentRowColumnSelector->getNext($rowsParent);//the second selected page is treated as the column pages parent
 
-				//if for some reason specified $columnsParent does not exist throw an error, return
-				if(!$columnsParent) {
-
-					$this->error($this->_('The specified matrix columns parent page was not found. Confirm it exists or specify another.'));
-					return;
-
-				}
+				//if for some reason specified $columnsParent does not exist set error message
+				if(!$columnsParent) return $this->_('The specified matrix columns parent page was not found. Confirm it exists or specify another.');
 				
-				//if $columnsParent does not have children, throw an error, return
-				if(!$columnsParent->numChildren) {
+				//if $columnsParent does not have children set error message
+				if(!$columnsParent->numChildren) return $this->_('The specified matrix column parent does not have children. You need to first create its child pages.');
 
-					$this->error($this->_('The specified matrix column parent does not have children. You need to first create its child pages.'));
-					return;
-
-				}
 				
 				##### -if we made it here, we are good to go ####
 				//find all matrix-row pages
@@ -144,28 +119,23 @@ class InputfieldMatrix extends Inputfield {
 		else {
 
 				//find all matrix-row pages
-				$rows = $pages->find($rowSelector); //ProcessWire will throw an exception here if the selector is not valid
+				$rows = $pages->find($rowSelector);//ProcessWire will throw an exception here if the selector is not valid
 
 				//find all matrix-column pages
-				$columns = $pages->find($columnSelector); //ProcessWire will throw an exception here if the selector is not valid
+				$columns = $pages->find($columnSelector);//ProcessWire will throw an exception here if the selector is not valid
 
-				//throw error if row selector returns empty!
-				if(!count($rows)) {
-							$this->error($this->_('No row pages found with the selector set in \'Row Matrix pages\' for this Field. Amend your selector.'));
-							return '<h4>Rows selector did not find any results!</h4>';
-				}
-
-				//throw error if column selector returns empty!
-				if(!count($columns)) {
-							$this->error($this->_('No column pages found with the selector set in \'Column Matrix\' pages for this Field. Amend your selector.'));
-							return '<h4>Columns selector did not find any results!</h4>';
-				}
-
+				//if row/column selectors return empty set error message
+				if(!count($rows)) 
+					return 	$this->_('No row pages found with the selector set in \'Row Matrix pages\' for the field ') . $this->field->name . 
+							'. <a href="' . $editURL .'">' . 	$this->_('Amend your selector') . '</a>.';
+				
+				if(!count($columns)) 
+					return 	$this->_('No column pages found with the selector set in \'Column Matrix pages\' for the field ') . $this->field->name . 
+							'. <a href="' . $editURL .'">' . 	$this->_('Amend your selector') . '</a>.';
 
 		}//end else we use row/column selectors
-		
-		
-		//creat our default matrix with blank values (i.e. blank matrix->value)
+
+		//create our default matrix with blank values (i.e. blank matrix->value)
 		//we later merge this with saved values in the db
 		//this will help us detect if new row/column pages have been added
 		$defaultMatrix = array();
@@ -173,14 +143,14 @@ class InputfieldMatrix extends Inputfield {
 		//get the rows and columns to build our empty-values default matrix
 		foreach($rows as $row) {
 
-					//create our rows - top level array
-					$defaultMatrix[$row->id] = '';
+				//create our rows - top level array
+				$defaultMatrix[$row->id] = '';
 
-					//create our columns - 2nd level array WITH empty values
-					foreach($columns as $column) {
-								
-								$defaultMatrix[$row->id][$column->id] = '';//value = blank
-					}
+				//create our columns - 2nd level array WITH empty values
+				foreach($columns as $column) {
+							
+							$defaultMatrix[$row->id][$column->id] = '';//value = blank
+				}
 
 		}
 
@@ -190,42 +160,64 @@ class InputfieldMatrix extends Inputfield {
 		//loop through saved db vakues
 		foreach($values as $m) {
 
-						//get the row page
-						$rp = $pages->get($m->matrix_row);
-						
-						//in case the matrix rows parent was changed and is different from the rows parent of the saved db values...
-						//we skip such rows in readiness for deletion
-						//we only do this if a Page Field was used to select matrix rows (difficult if a selector was used - no problem since assuming only supersuser can edit selector in Page Field)
-						if($rowsParent && $rp->parent != $rowsParent) continue;
+				//get the row page
+				$rp = $pages->get($m->matrix_row);
+				
+				//in case the matrix rows parent was changed and is different from the rows parent of the saved db values...
+				//we skip such rows in readiness for deletion
+				//we only do this if a Page Field was used to select matrix rows (difficult if a selector was used - no problem since assuming only supersuser can edit selector in Page Field)
+				if($rowsParent && $rp->parent != $rowsParent) continue;
 
-						//remove matrix-rows that are no longer needed i.e. 'unpublished', 'hidden', 'deleted' or 'trashed'
-						if(!$rp || $rp->is(Page::statusUnpublished) || $rp->isHidden() || $rp->isTrash()) continue;
-						//if(!$rp || $rp->is('unpublished') || $rp->is('hidden')) continue;//syntax will only work in PW 2.5+ ?
+				//remove matrix-rows that are no longer needed i.e. 'unpublished', 'hidden', 'deleted' or 'trashed'
+				if(!$rp || $rp->is(Page::statusUnpublished) || $rp->isHidden() || $rp->isTrash()) continue;
+				//if(!$rp || $rp->is('unpublished') || $rp->is('hidden')) continue;//syntax will only work in PW 2.5+ ?
 
-						//build the saved values array
-						$dbMatrix[$m->matrix_row][$m->matrix_column] = $m->matrix_value;
+				//build the saved values array
+				#$dbMatrix[$m->matrix_row][$m->matrix_column] = $m->matrix_value;//
+				$dbMatrix[$m->matrix_row][$m->matrix_column] = $this->sanitizer->entities($m->matrix_value);//@@todo - need to sanitize this values for display?
 
-						//get the column page
-						$cp = $pages->get($m->matrix_column);
+				//get the column page
+				$cp = $pages->get($m->matrix_column);
 
-						//remove matrix-columns that are no longer needed i.e. 'unpublished', 'hidden', 'deleted' or 'trashed'
-						if(!$cp || $cp->is(Page::statusUnpublished) || $cp->isHidden() || $cp->isTrash()) unset($dbMatrix[$m->matrix_row][$m->matrix_column]);
-						
-						//in case the matrix columns parent was changed and is different from the columns parent of the saved db values...
-						//we remove such columns in readiness for deletion
-						//we only do this if a Page Field was used to select matrix columns (ditto above)
-						if($columnsParent && $cp->parent != $columnsParent) unset($dbMatrix[$m->matrix_row][$m->matrix_column]);
+				//remove matrix-columns that are no longer needed i.e. 'unpublished', 'hidden', 'deleted' or 'trashed'
+				if(!$cp || $cp->is(Page::statusUnpublished) || $cp->isHidden() || $cp->isTrash()) unset($dbMatrix[$m->matrix_row][$m->matrix_column]);
+				
+				//in case the matrix columns parent was changed and is different from the columns parent of the saved db values...
+				//we remove such columns in readiness for deletion
+				//we only do this if a Page Field was used to select matrix columns (ditto above)
+				if($columnsParent && $cp->parent != $columnsParent) unset($dbMatrix[$m->matrix_row][$m->matrix_column]);
 
 		}
-
-		//#########	CREATE MATRIX TABLE #########
 
 		//prepare our final matrix to output to page (edit) InputfieldMatrix
 		//we recursively replace defaultMatrix blank values with dbMatrix values where applicable (matched array keys)
 		//'new' (i.e. not in $dbMatrix) default row/column combinations are preserved and added to final matrix
 		//note: values previously saved using a different selector will still be present!...
 		//as long as their respective pages have not been deleted/trashed/hid/unpublished
-		$mergedMatrix = array_replace_recursive($defaultMatrix, $dbMatrix);		
+		$mergedMatrix = array_replace_recursive($defaultMatrix, $dbMatrix);
+
+		return $mergedMatrix;//matrix array
+
+	}
+
+	/**
+	 * Render the entire input area for a Matrix
+	 *
+	 */
+	public function ___render() {
+
+		//#########	CREATE MATRIX TABLE #########
+
+		$mergedMatrix = $this->mergeMatrix();
+
+		//if we didn't get an array back from $mergeMatrix() it means errors were found. We output the returned 'error' strings
+		if(!is_array($mergedMatrix)) {
+			$this->error($mergedMatrix, Notice::allowMarkup);
+			return;
+
+		}
+
+		$pages = wire('pages');
 
 		$tbody ='';//for matrix rows
 		$thcols = '';//for matrix table column headers
@@ -239,47 +231,47 @@ class InputfieldMatrix extends Inputfield {
 		
 		foreach($mergedMatrix as $row => $cols) {
 
-		            //matrix table row headers (first column)
-					$rh = $pages->get($row);//getting by page->id
-		            #$tbody .= "<tr><td><strong>" . $pages->get($row)->title . "</strong></td>";
-					
-					//if we have a row label from selected field show it otherwise show title
-		            $rowLabel = $rh->$rowHeaderLabel ? $rh->$rowHeaderLabel : $rh->title;
-		           /*$tbody .= "<tr>
-									<td class=MatrixRowCount>" . $j. "</td>
-		            				<td>" . $rowLabel. "</td>";*///@@left here in case will switch to row counters in the future
+	            //matrix table row headers (first column)
+				$rh = $pages->get($row);//getting by page->id
+	            #$tbody .= "<tr><td><strong>" . $pages->get($row)->title . "</strong></td>";
+				
+				//if we have a row label from selected field show it otherwise show title
+	            $rowLabel = $rh->$rowHeaderLabel ? $rh->$rowHeaderLabel : $rh->title;
+	           /*$tbody .= "<tr>
+								<td class=MatrixRowCount>" . $j. "</td>
+	            				<td>" . $rowLabel. "</td>";*///@@left here in case will switch to row counters in the future
 
-		            $tbody .= "<tr><td class='MatrixRowHeader'>" . $rowLabel . "</td>";
-	            
-		            //we count this once only rather than on each 'row' loop!
-		            if($i == 0) $count = count($cols);//help to stop output of extra/duplicate column headers
+	            $tbody .= "<tr><td class='MatrixRowHeader'>" . $rowLabel . "</td>";
+            
+	            //we count this once only rather than on each 'row' loop!
+	            if($i == 0) $count = count($cols);//help to stop output of extra/duplicate column headers
 
-		            foreach($cols as $col => $value) {
+	            foreach($cols as $col => $value) {
 
-				            	//matrix table column headers
-		            			$ch = $pages->get($col);//getting by page->id
+			            	//matrix table column headers
+	            			$ch = $pages->get($col);//getting by page->id
 
-		            			//if we have a column label from selected field show it otherwise show title
-		            			$columnLabel = $ch->$columnHeaderLabel ? $ch->$columnHeaderLabel : $ch->title;
-				            	
-				            	//avoid outputting extra duplicate columns. 
-				            	if($i < $count) {
+	            			//if we have a column label from selected field show it otherwise show title
+	            			$columnLabel = $ch->$columnHeaderLabel ? $ch->$columnHeaderLabel : $ch->title;
+			            	
+			            	//avoid outputting extra duplicate columns. 
+			            	if($i < $count) {
 
-					            		$thcols .= "<th class='MatrixColumnHeader'>" . $columnLabel  . "</th>";
+				            		$thcols .= "<th class='MatrixColumnHeader'>" . $columnLabel  . "</th>";
 
-										$i++;//no need to keep incrementing after number of desired columns reached
+									$i++;//no need to keep incrementing after number of desired columns reached
 
-				            	}
-				            		
-				                //input name will be in the format 'R5282_C5289' to match row and column page IDs respectively
-				                #$tbody .= "<td><input type='text' name='matrix[R" . $rh->id . "_C" . $ch->id . "]' value='" . $value . "'></td>";
-				                $tbody .= "<td><input type='text' name='matrix_" . $this->field->name. "[R" . $rh->id . "_C" . $ch->id . "]' value='" . $value . "'></td>";				             	
+			            	}
+			            		
+			                //input name will be in the format 'R5282_C5289' to match row and column page IDs respectively
+			                #$tbody .= "<td><input type='text' name='matrix[R" . $rh->id . "_C" . $ch->id . "]' value='" . $value . "'></td>";
+			                $tbody .= "<td><input type='text' name='matrix_" . $this->field->name. "[R" . $rh->id . "_C" . $ch->id . "]' value='" . $value . "'></td>";				             	
 
-		            }
+	            }
 
-		            $tbody .= "</tr>";	            
+	            $tbody .= "</tr>";	            
 
-		            //$j++;
+	            //$j++;
 		}
 
 		//final matrix table for output
@@ -305,35 +297,35 @@ class InputfieldMatrix extends Inputfield {
 	 */
 	public function ___processInput(WireInputData $input) {
 
-			if(!$this->page || !$this->field) {
-				throw new WireException("This inputfield requires that you set valid 'page' and 'field' properties to it."); 
-			}
+		if(!$this->page || !$this->field) {
+			throw new WireException("This inputfield requires that you set valid 'page' and 'field' properties to it."); 
+		}
 
-			$name = 'matrix_' . $this->attr('name');
+		$name = 'matrix_' . $this->attr('name');
 
-			$matrices = $this->field->type->getBlankValue($this->page, $this->field);
+		$matrices = $this->field->type->getBlankValue($this->page, $this->field);
 
-			foreach($input->{"{$name}"} as $key => $value) {
-					
-					//if value empty, we skip the record; no need to save empty values!
-					if($value == '') continue;
+		foreach($input->{"{$name}"} as $key => $value) {
+				
+				//if value empty, we skip the record; no need to save empty values!
+				if($value == '') continue;
 
-					//$key is in the format R1234_C1234 reflecting row and column pages' IDs respectively
-					$rowCol = explode('_', $key);//[0]=>R1234, [1]=>C1234
+				//$key is in the format R1234_C1234 reflecting row and column pages' IDs respectively
+				$rowCol = explode('_', $key);//[0]=>R1234, [1]=>C1234
 
-					$row = str_replace('R', NULL, $rowCol[0]);//clean row page ID
-					$column = str_replace('C', NULL, $rowCol[1]);//clean column page ID
+				$row = str_replace('R', NULL, $rowCol[0]);//clean row page ID
+				$column = str_replace('C', NULL, $rowCol[1]);//clean column page ID
 
-					//create a new matrix and add it to our matrices
-					$m = new Matrix();
+				//create a new matrix and add it to our matrices
+				$m = new Matrix();
 
-					$m->matrix_row = (int) $row;//@@todo - don't really need to sanitize here as well since done in Matrix::set() too?
-					$m->matrix_column = (int) $column;//@@todo - ditto
-					$m->matrix_value = $value;
+				$m->matrix_row = (int) $row;//@@todo - don't really need to sanitize here as well since done in Matrix::set() too?
+				$m->matrix_column = (int) $column;//@@todo - ditto
+				$m->matrix_value = $value;
 
-					$matrices->add($m);//add matrix to MatrixArray
+				$matrices->add($m);//add matrix to MatrixArray
 
-			}//end foreach
+		}//end foreach
 		
 		//if the string values of the processed matrices are different from the previous,
 		//or if any matrices have been deleted, then flag this Inputfield as changed
