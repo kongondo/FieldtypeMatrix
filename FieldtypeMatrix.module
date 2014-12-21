@@ -32,7 +32,7 @@ class FieldtypeMatrix extends FieldtypeMulti {
 		return array(
 			'title' => 'Matrix',
 			'author' => 'Kongondo',
-			'version' => 4,
+			'version' => 5,
 			'href' => 'https://processwire.com/talk/topic/8581-module-matrix-fieldtype-inputfield/',
 			'summary' => 'Field that stores values in a 2D-matrix table in a page.',
 			'installs' => 'InputfieldMatrix', 
@@ -203,79 +203,78 @@ class FieldtypeMatrix extends FieldtypeMulti {
 	}
 
 
-        /**
-         * Given a raw value (value as stored in DB), return the value as it would appear in a Page object
-	 *
-         * @param Page $page
-         * @param Field $field
-         * @param string|int|array $value
-         * @return string|int|array|object $value
-         *
-         */
-        public function ___wakeupValue(Page $page, Field $field, $value) {
+    /**
+     * Given a raw value (value as stored in DB), return the value as it would appear in a Page object
+ 	 *
+     * @param Page $page
+     * @param Field $field
+     * @param string|int|array $value
+     * @return string|int|array|object $value
+     *
+     */
+    public function ___wakeupValue(Page $page, Field $field, $value) {
 
+		//if for some reason we already get a valid value, then just return it
+		if($value instanceof MatrixArray) return $value;
 
-				//if for some reason we already get a valid value, then just return it
-				if($value instanceof MatrixArray) return $value;
+		//start a blank value to be populated
+		$matrices = $this->getBlankValue($page, $field); 
 
-				//start a blank value to be populated
-				$matrices = $this->getBlankValue($page, $field); 
+		//if we were given a blank value, then we've got nothing to do: just return a blank MatrixArray
+		if(empty($value) || !is_array($value)) return $matrices; 
 
-				//if we were given a blank value, then we've got nothing to do: just return a blank MatrixArray
-				if(empty($value) || !is_array($value)) return $matrices; 
-
-				//create new Matrix objects from each item in the array
-				foreach($value as $v) {
-					
-					$m = new Matrix();
-
-					$m->matrix_row = $v['data']; //note we are converting 'data' to 'matrix_row'
-					$m->matrix_column = $v['matrix_column'];
-					$m->matrix_value = $v['matrix_value'];
-					
-					$m->setTrackChanges(true);//track changes for individual matrix
-					$matrices->add($m);//add to matrices
-				
-				}//end foreach $value as $v
-
-				$matrices->resetTrackChanges();//reset track changes for all matrices
-
-                return $matrices;  
-        }
-
-        /**
-         * Given an 'awake' value, as set by wakeupValue, convert the value back to a basic type for storage in DB. 
-         *              
-         * @param Page $page
-         * @param Field $field
-         * @param string|int|array|object $value
-         * @return string|int
-         *
-         */
-        public function ___sleepValue(Page $page, Field $field, $value) {
-
-				$sleepValue = array();
-
-				//if we are given something other than an MatrixArray, 
-				//then just return a blank array
-				if(!$value instanceof MatrixArray) return $sleepValue;
-
-				//make the matrices sort by matrix_row ascending
-				$value->sort('matrix_row');		
-
-				//convert each Matrix to an array within sleepValue
-				foreach($value as $m) {
-
-						$sleepValue[] = array(
-							'data' => (int) $m->matrix_row, //note: matrix_row is becoming data which is a required column in a Fieldtype
-							'matrix_column' => $m->matrix_column,
-							'matrix_value' => $m->matrix_value,
-							
-						); 
-				}//end foreach $value as $m				
+		//create new Matrix objects from each item in the array
+		foreach($value as $v) {
 			
-				return $sleepValue;
-        }
+			$m = new Matrix();
+
+			$m->matrix_row = $v['data']; //note we are converting 'data' to 'matrix_row'
+			$m->matrix_column = $v['matrix_column'];
+			$m->matrix_value = $v['matrix_value'];
+			
+			$m->setTrackChanges(true);//track changes for individual matrix
+			$matrices->add($m);//add to matrices
+		
+		}//end foreach $value as $v
+
+		$matrices->resetTrackChanges();//reset track changes for all matrices
+
+        return $matrices;  
+}
+
+    /**
+     * Given an 'awake' value, as set by wakeupValue, convert the value back to a basic type for storage in DB. 
+     *              
+     * @param Page $page
+     * @param Field $field
+     * @param string|int|array|object $value
+     * @return string|int
+     *
+     */
+    public function ___sleepValue(Page $page, Field $field, $value) {
+
+		$sleepValue = array();
+
+		//if we are given something other than an MatrixArray, 
+		//then just return a blank array
+		if(!$value instanceof MatrixArray) return $sleepValue;
+
+		//make the matrices sort by matrix_row ascending
+		$value->sort('matrix_row');		
+
+		//convert each Matrix to an array within sleepValue
+		foreach($value as $m) {
+
+				$sleepValue[] = array(
+					'data' => (int) $m->matrix_row, //note: matrix_row is becoming data which is a required column in a Fieldtype
+					'matrix_column' => $m->matrix_column,
+					'matrix_value' => $m->matrix_value,
+					
+				); 
+		}//end foreach $value as $m				
+	
+		return $sleepValue;
+    }
 
 	/**
 	 * Given a value, make it clean for storage within a Page
