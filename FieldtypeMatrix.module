@@ -32,7 +32,7 @@ class FieldtypeMatrix extends FieldtypeMulti {
 		return array(
 			'title' => 'Matrix',
 			'author' => 'Kongondo',
-			'version' => 5,
+			'version' => 6,
 			'href' => 'https://processwire.com/talk/topic/8581-module-matrix-fieldtype-inputfield/',
 			'summary' => 'Field that stores values in a 2D-matrix table in a page.',
 			'installs' => 'InputfieldMatrix', 
@@ -56,16 +56,15 @@ class FieldtypeMatrix extends FieldtypeMulti {
 	 * Return the required Inputfield used to populate a field of this type
 	 *
 	 */
-	public function getInputfield(Page $page, Field $field) {
-		
+	public function getInputfield(Page $page, Field $field) {		
 
 		$inputfield = $this->modules->get("InputfieldMatrix"); 
 
 		//our inputfield requires a Page and Field (most Inputfields don't)
 		$inputfield->setPage($page);//this is a method in InputfieldMatrix
 		$inputfield->setField($field);//this is a method in InputfieldMatrix
-		$inputfield->set('rows', $field->rows);//we'll use this to grab a selector string for finding matrix_row header pages from FieldtypeMatrix Details Tab
-		$inputfield->set('columns', $field->columns);//we'll use this to grab a selector string for finding matrix_column pages from FieldtypeMatrix Details Tab
+		$inputfield->set('rowSelector', $field->rowSelector);//we'll use this to grab a selector string for finding matrix_row header pages from FieldtypeMatrix Details Tab
+		$inputfield->set('columnSelector', $field->columnSelector);//we'll use this to grab a selector string for finding matrix_column pages from FieldtypeMatrix Details Tab
 		//if specified overrides above two selectors. Holds the name of a page field from which to grab parent of matrix row + column pages
 		//needs two pages to be selected. First=row pages parent; Second=column pages parent
 		$inputfield->set('parentRowColumnFieldName', $field->parentRowColumnFieldName);
@@ -97,8 +96,8 @@ class FieldtypeMatrix extends FieldtypeMulti {
 
 		//selector for finding 'row' pages
 		$f = $this->modules->get("InputfieldText");
-		$f->attr('name', 'rows');
-		$f->attr('value', $field->rows);
+		$f->attr('name', 'rowSelector');
+		$f->attr('value', $field->rowSelector);
 		$f->label = $this->_('Matrix Row Pages Selector');
 		$f->description = $this->_('Enter a selector to find pages for the matrix rows (y-axis).');
 		$f->notes = $this->_('Example: parent=/products/, template=product, sort=name');
@@ -107,8 +106,8 @@ class FieldtypeMatrix extends FieldtypeMulti {
 
 		//selector for finding 'column' pages
 		$f = $this->modules->get("InputfieldText");
-		$f->attr('name', 'columns');
-		$f->attr('value', $field->columns);
+		$f->attr('name', 'columnSelector');
+		$f->attr('value', $field->columnSelector);
 		$f->label = $this->_('Matrix Column Pages Selector');
 		$f->description = $this->_('Enter a selector to find pages for the matrix columns (x-axis).');
 		$f->notes = $this->_('Example: parent=/products/, template=product, sort=name');
