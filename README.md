@@ -150,6 +150,9 @@ Other more complex queries are possible, e.g. find all products that are either 
 
 ##Changelog
 
+###Version 0.0.7
+Added optional feature enabling fast import of CSV data using MySQL's LOAD DATA INFILE.
+
 ###Version 0.0.6
 Added ability to copy-paste CSV values to populate the matrix of the current page.
 
