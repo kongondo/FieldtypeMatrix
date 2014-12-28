@@ -32,7 +32,7 @@ class FieldtypeMatrix extends FieldtypeMulti {
 		return array(
 			'title' => 'Matrix',
 			'author' => 'Kongondo',
-			'version' => 6,
+			'version' => 7,
 			'href' => 'https://processwire.com/talk/topic/8581-module-matrix-fieldtype-inputfield/',
 			'summary' => 'Field that stores values in a 2D-matrix table in a page.',
 			'installs' => 'InputfieldMatrix', 
@@ -70,8 +70,10 @@ class FieldtypeMatrix extends FieldtypeMulti {
 		$inputfield->set('parentRowColumnFieldName', $field->parentRowColumnFieldName);
 		$inputfield->set('rowLabelFieldName', $field->rowLabelFieldName);//we'll use this to label our matrix-row headers
 		$inputfield->set('columnLabelFieldName', $field->columnLabelFieldName);//we'll use this to label our matrix-column headers
+		//we'll use this to determine if csv data should be saved using MySQL's fast LOAD DATA INFILE
+		$inputfield->set('loadDataInfile', $field->loadDataInfile);
 
-		return $inputfield; 
+		return $inputfield;
 	}
 
 	/**
@@ -79,10 +81,11 @@ class FieldtypeMatrix extends FieldtypeMulti {
 	 *
 	 */
 	public function getBlankValue(Page $page, Field $field) {
-		
+
 		$matrices = new MatrixArray($page);
 
 		$matrices->setTrackChanges(true);
+
 		return $matrices; 
 
 	}
@@ -101,7 +104,7 @@ class FieldtypeMatrix extends FieldtypeMulti {
 		$f->label = $this->_('Matrix Row Pages Selector');
 		$f->description = $this->_('Enter a selector to find pages for the matrix rows (y-axis).');
 		$f->notes = $this->_('Example: parent=/products/, template=product, sort=name');
-		//$f->required = true;//now optional since user may indicate a the name of a page field to be used to select rows+columns
+		
 		$inputfields->append($f);
 
 		//selector for finding 'column' pages
@@ -111,7 +114,7 @@ class FieldtypeMatrix extends FieldtypeMulti {
 		$f->label = $this->_('Matrix Column Pages Selector');
 		$f->description = $this->_('Enter a selector to find pages for the matrix columns (x-axis).');
 		$f->notes = $this->_('Example: parent=/products/, template=product, sort=name');
-		//$f->required = true;//now optional since user may indicate a the name of a page field to be used to select rows+columns
+		
 		$inputfields->append($f);
 
 		//name of Page Field for specifying row + column parent pages whose children will constitute matrix-rows and columns respectively
@@ -123,9 +126,20 @@ class FieldtypeMatrix extends FieldtypeMulti {
 		$f->label = $this->_('Matrix Row and Column Parent Pages');
 		$f->description = $this->_('Enter the name of a Page Field. This overrides the above two selectors. It allows you to reuse this matrix field in several pages using various combinations of row and column pages.');
 		$f->notes = $this->_('This has to be a Multiplepages Field. The first selected page in the specified Page Field will refer to the parent pages for matrix rows and the second for matrix columns. Any other pages added will be ingored. From a usability point of view, it is probably best to use an AsmSelect Page Field.');
-		//$f->required = true;//now optional since user may indicate a the name of a page field to be used to select rows+columns
+		
 		$inputfields->append($f);
 
+		//checkbox for LOAD DATA INFILE
+		$f = $this->modules->get("InputfieldCheckbox");
+		$f->attr('name', 'loadDataInfile');
+		$f->attr('checked', $field->loadDataInfile ? 'checked' : '');
+		$f->label = $this->_('Use MySQL LOAD DATA INFILE');
+		$f->label2 = $this->_('Check to use MySQL LOAD DATA INFILE');
+		$f->description = $this->_('Only check the box if you are sure that this MySQL option is enabled on your server!');
+		$f->notes = $this->_('This feature allows the saving of large CSV data sets at very high speed.');
+		$f->collapsed = Inputfield::collapsedYes;
+		
+		$inputfields->append($f);
 
 		//for InputfieldSelect below
 		$defaultLabel = ' ' . $this->_('(default)');
@@ -196,13 +210,13 @@ class FieldtypeMatrix extends FieldtypeMulti {
 
 		}
 		
-		$inputfields->append($f); 
+		$inputfields->append($f);
 
 		return $inputfields;
 	}
 
 
-    /**
+	/**
      * Given a raw value (value as stored in DB), return the value as it would appear in a Page object
  	 *
      * @param Page $page
@@ -211,7 +225,7 @@ class FieldtypeMatrix extends FieldtypeMulti {
      * @return string|int|array|object $value
      *
      */
-    public function ___wakeupValue(Page $page, Field $field, $value) {
+	public function ___wakeupValue(Page $page, Field $field, $value) {
 
 		//if for some reason we already get a valid value, then just return it
 		if($value instanceof MatrixArray) return $value;
@@ -238,10 +252,11 @@ class FieldtypeMatrix extends FieldtypeMulti {
 
 		$matrices->resetTrackChanges();//reset track changes for all matrices
 
-        return $matrices;  
-}
+		return $matrices;
 
-    /**
+	}
+
+	/**
      * Given an 'awake' value, as set by wakeupValue, convert the value back to a basic type for storage in DB. 
      *              
      * @param Page $page
@@ -250,7 +265,7 @@ class FieldtypeMatrix extends FieldtypeMulti {
      * @return string|int
      *
      */
-    public function ___sleepValue(Page $page, Field $field, $value) {
+	public function ___sleepValue(Page $page, Field $field, $value) {
 
 		$sleepValue = array();
 
@@ -273,7 +288,8 @@ class FieldtypeMatrix extends FieldtypeMulti {
 		}//end foreach $value as $m				
 	
 		return $sleepValue;
-    }
+
+	}
 
 	/**
 	 * Given a value, make it clean for storage within a Page
