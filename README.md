@@ -1,6 +1,6 @@
 # FieldtypeMatrix
 
-##Note: Alpha version!
+##Note: Beta version!
 
 This module is useful if you wish to save data in a **2D-matrix(grid) table**.
 The matrix table is made up of row and column headers of pages whose individual intersections form the 'matrix values'
@@ -149,6 +149,11 @@ $results = $pages->find("matrix.matrix_value<1000");
 Other more complex queries are possible, e.g. find all products that are either red or purple in colour, come in x-large size and are priced less than $50.
 
 ##Changelog
+
+###Version 0.0.8
+Option to populate matrix table via a .csv/.txt file upload.
+Top and Bottom Reset buttons to clear all matrix values before save.
+Changed development status to Beta.
 
 ###Version 0.0.7
 Added optional feature enabling fast import of CSV data using MySQL's LOAD DATA INFILE.
