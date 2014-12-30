@@ -32,7 +32,7 @@ class FieldtypeMatrix extends FieldtypeMulti {
 		return array(
 			'title' => 'Matrix',
 			'author' => 'Kongondo',
-			'version' => 7,
+			'version' => 8,
 			'href' => 'https://processwire.com/talk/topic/8581-module-matrix-fieldtype-inputfield/',
 			'summary' => 'Field that stores values in a 2D-matrix table in a page.',
 			'installs' => 'InputfieldMatrix', 
@@ -165,20 +165,20 @@ class FieldtypeMatrix extends FieldtypeMulti {
 		
 		$f->addOption('path', 'path'); 
 
-		foreach(wire('fields') as $field) {
+		foreach(wire('fields') as $rowField) {
 
 				//we only want to add fields that return strings (but not textareas!) - so no image, page fields, etc
-				if(!$field->type instanceof FieldtypeText) continue;
-				if($field->type instanceof FieldtypeTextarea) continue; 
-				if($titleIsDefault && $field->name == 'title') continue;
+				if(!$rowField->type instanceof FieldtypeText) continue;
+				if($rowField->type instanceof FieldtypeTextarea) continue; 
+				if($titleIsDefault && $rowField->name == 'title') continue;
 				
-				$f->addOption($field->name);
+				$f->addOption($rowField->name);
 
 		}
 		
 		$inputfields->append($f);
 
-		//a select input for our column headers (i.e. the string to show as column headers) - @@todo - saved value not being selected in display! bug with showing two inputselects?
+		//a select input for our column headers (i.e. the string to show as column headers)
 		$f = $this->modules->get('InputfieldSelect');
 		$f->setAttribute('name', 'columnLabelFieldName');
 		$f->setAttribute('value', $field->columnLabelFieldName);
@@ -199,14 +199,14 @@ class FieldtypeMatrix extends FieldtypeMulti {
 		
 		$f->addOption('path', 'path'); 
 
-		foreach(wire('fields') as $field) {
+		foreach(wire('fields') as $columnField) {
 
 				//we only want to add fields that return strings (but not textareas!) - so no image, page fields, etc
-				if(!$field->type instanceof FieldtypeText) continue;
-				if($field->type instanceof FieldtypeTextarea) continue; 
-				if($titleIsDefault && $field->name == 'title') continue;
+				if(!$columnField->type instanceof FieldtypeText) continue;
+				if($columnField->type instanceof FieldtypeTextarea) continue; 
+				if($titleIsDefault && $columnField->name == 'title') continue;
 				
-				$f->addOption($field->name);
+				$f->addOption($columnField->name);
 
 		}
 		
