@@ -29,7 +29,7 @@ class InputfieldMatrix extends Inputfield {
 		return array(
 			'title' => 'Matrix',
 			'author' => 'Kongondo',
-			'version' => 8,
+			'version' => 9,
 			'href' => 'https://processwire.com/talk/topic/8581-module-matrix-fieldtype-inputfield/',
 			'summary' => 'Input field for a 2D-matrix.',
 			'requires' => 'FieldtypeMatrix', 
@@ -582,7 +582,13 @@ class InputfieldMatrix extends Inputfield {
 									continue;
 							}
 
-							$data[] = array((int)$rows[$i], (int)$col , $this->sanitizer->text($csvData[$j]));
+							//first, attempt to auto-detect char encoding of 'troublesome' characters
+							//then encode to UTF-8
+							$value = $this->charEncode($csvData[$j], 'UTF-8');
+
+							$data[] = array((int)$rows[$i], (int)$col , $this->sanitizer->text($value));
+							#$data[] = array( (int)$rows[$i], (int)$col , $this->sanitizer->text($csvData[$j]));
+							
 							$j++;
 							if($j == $cntCols) break;//if csv data columns exceed columns in matrix table we abort
 					
@@ -682,7 +688,7 @@ class InputfieldMatrix extends Inputfield {
 		}//end foreach $data as $d
 
 		$this->message(sprintf(_n("Saved %d matrix value.", "Saved %d matrix values.", $count), $count));//tell user how many values were saved
-		
+
 		return $matrices;//return the matrices object
 
 	}
@@ -758,6 +764,36 @@ class InputfieldMatrix extends Inputfield {
 		$this->message(sprintf(_n("Saved %d matrix value.", "Saved %d matrix values.", $count), $count));//tell user how many values were saved
 
 	}
+
+
+	/**
+	 * Attempt to auto-encode unrecognised characters during fopen operations.
+	 * If detection fails, at least values are parsed without ??
+	 *
+	 * @author aaron@aarongough.com - php.net
+	 */
+	public function charEncode ($source, $targetEncoding) {
+		
+		//detect the character encoding of the incoming file
+		$encoding = mb_detect_encoding($source, "auto");
+
+		//escape all of the question marks so we can remove artifacts from
+		//the unicode conversion process
+		$target = str_replace( "?", "[question_mark]", $source );
+
+		//convert the string to the target encoding
+		$target = mb_convert_encoding( $target, $targetEncoding, $encoding);
+
+		//remove any question marks that have been introduced because of illegal characters
+		$target = str_replace( "?", "", $target );
+
+		//replace the token string "[question_mark]" with the symbol "?"
+		$target = str_replace( "[question_mark]", "?", $target );
+
+		return $target;
+
+	}
+
 
 
 }
