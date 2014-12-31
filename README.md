@@ -150,6 +150,9 @@ Other more complex queries are possible, e.g. find all products that are either 
 
 ##Changelog
 
+###Version 0.0.9
+Fixed a character encoding issue regarding fopen.
+
 ###Version 0.0.8
 Option to populate matrix table via a .csv/.txt file upload.
 Top and Bottom Reset buttons to clear all matrix values before save.
