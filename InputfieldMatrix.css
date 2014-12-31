@@ -32,3 +32,17 @@ table.InputfieldMatrix {
 }
 
 
+/* Button to clear all/reset matrix values before save */
+.InputfieldMatrixReset {
+	float: right;
+	margin-bottom: 20px;
+
+}
+
+.InputfieldMatrixReset:hover {
+	cursor: pointer;
+
+}
+
+
+

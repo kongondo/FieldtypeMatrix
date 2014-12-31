@@ -29,7 +29,7 @@ class InputfieldMatrix extends Inputfield {
 		return array(
 			'title' => 'Matrix',
 			'author' => 'Kongondo',
-			'version' => 7,
+			'version' => 9,
 			'href' => 'https://processwire.com/talk/topic/8581-module-matrix-fieldtype-inputfield/',
 			'summary' => 'Input field for a 2D-matrix.',
 			'requires' => 'FieldtypeMatrix', 
@@ -220,7 +220,6 @@ class InputfieldMatrix extends Inputfield {
 		$thcols = '';//for matrix table column headers
 		$rowHeaderLabel = $this->rowLabelFieldName;//this property was set in FieldtypeMatrix getInputfield()
 		$columnHeaderLabel = $this->columnLabelFieldName;//this property was set in FieldtypeMatrix getInputfield()
-		//@@todo - saved $columnHeaderLabler not being displayed as selected in Details tab! But value is correctly saved in db
 
 		$i = 0;//set counter not to output extraneous column label headers
 		//$j = 1;//counter for rows numbering
@@ -262,7 +261,7 @@ class InputfieldMatrix extends Inputfield {
 
 							//input name will be in the format 'R5282_C5289' to match row and column page IDs respectively
 							#$tbody .= "<td><input type='text' name='matrix[R" . $rh->id . "_C" . $ch->id . "]' value='" . $value . "'></td>";
-							$tbody .= "<td><input type='text' name='matrix_" . $this->field->name. "[R" . $rh->id . "_C" . $ch->id . "]' value='" . $value . "'></td>";	
+							$tbody .= "<td><input type='text' name='matrix_" . $this->field->name. "[R" . $rh->id . "_C" . $ch->id . "]' value='" . $value . "'></td>";
 
 				}
 
@@ -271,8 +270,14 @@ class InputfieldMatrix extends Inputfield {
 				//$j++;
 		}
 
+		//button to reset/clear all matrix values before save
+
+		$clearAllButton = "<input type='button' class='InputfieldMatrixReset' value='Reset' />";
+
 		//final matrix table for output
-		 $out =   "<table class='InputfieldMatrix'>
+		$out =   "
+					$clearAllButton
+		 			<table class='InputfieldMatrix'>
 						<thead>
 							<tr class=''>
 								<th></th>
@@ -282,16 +287,32 @@ class InputfieldMatrix extends Inputfield {
 						<tbody>
 							$tbody
 						</tbody>
-					</table>";
+					</table>					
+					$clearAllButton
+		";
 
 		//paste CSV data options
 		$inputfields = new InputfieldWrapper();
 
-		$fieldset = $this->modules->get('InputfieldFieldset'); 
+		$fieldset = $this->modules->get('InputfieldFieldset');
 		$fieldset->attr('id', 'csv_import'); 
-		$fieldset->label = "CSV Data";
-		$fieldset->description = $this->_('If you prefer, you may paste in CSV data below rather than entering them manually to populate your matrix table above.');
+		$fieldset->label = $this->_('Upload/Paste CSV Data');
+		$fieldset->description = $this->_('If you prefer, you may upload a CSV file or copy-paste CSV data here rather than manually entering values in your matrix table above.');
 		$fieldset->collapsed = Inputfield::collapsedYes;
+
+		//upload csv/txt file
+		$f = $this->modules->get("InputfieldMarkup");
+		$f->label = $this->_('CSV File');
+		$f->value = "<input name='matrix_" . $this->field->name . "_csvfile' type='file' />";
+		$f->description = 
+			 $this->_("UTF-8 compatible encoding is assumed. The file must have the extension '.csv' or '.txt'. You can also copy-paste in CSV data in the 'Paste in CSV Data' section below. You may do one or the other, but not both simultaneously. If you did both, copy-pasted values would be disregarded. If your CSV data is not comma-delimeted, specify your delimiter below before proceeding.");
+		$f->notes = $this->_("1. If you wish to import values for your whole matrix table, be sure that the number of rows and columns in your CSV data exactly match the matrix table above.\n") . 
+			$this->_("2. Any extra rows/columns will be discarded.\n") . 
+			$this->_("3. However, your CSV data can also have less rows/columns or some missing values.\n") .  
+			$this->_("4. After saving, you will be able to manually input missing values and/or correct mistakes.\n") . 
+			$this->_("5. The CSV Data must not contain a column/header row, i.e. the first row in your CSV values will be saved as data.");
+
+		$fieldset->add($f);
 
 		//csv delimeter
 		$f = $this->modules->get('InputfieldText');
@@ -299,7 +320,7 @@ class InputfieldMatrix extends Inputfield {
 		$f->label = $this->_('Columns delimited by');
 		$f->notes = $this->_('For tab-separated, enter: tab.');
 		$f->value = ',';
-		#$f->columnWidth = 50;
+		
 		$fieldset->add($f);
 
 		//csv enclosure
@@ -309,23 +330,18 @@ class InputfieldMatrix extends Inputfield {
 		$f->notes = $this->_('When a value contains a delimeter, it must be enclosed by a character (typically a double quote character). If you are not sure what should go here, it is recommended you leave it at the default (").');
 		$f->value = '"';
 		if($f->value == '"') $f->collapsed = Inputfield::collapsedYes;
-		$f->attr('maxlength', 1); 
-		$f->attr('size', 1); 
-		#$f->columnWidth = 50;
+		$f->attr('maxlength', 1);
+		$f->attr('size', 1);
 
 		$fieldset->add($f);
 
 		//csv paste
 		$f = $this->modules->get('InputfieldTextarea');
-		$f->name = "matrix_" . $this->field->name . "_csvdata";
+		$f->name = "matrix_" . $this->field->name . "_csvpasted";
 		$f->label = $this->_('Paste in CSV Data');
-		$f->description = $this->_('If you prefer, you may paste in CSV data here rather than entering them manually to populate your matrix table above. 
-			Values entered here overwrite those in the matrix table!');
-		$f->notes = $this->_('1. If you wish to import values for your whole matrix table, be sure that the number of rows and columns in your CSV data exactly match the matrix table above.
-			2. Any extra rows/columns will be discarded. 
-			3. However, you can also paste in CSV data with less rows/columns or with some missing values. 
-			4. After saving, you will be able to manually input missing values and/or correct mistakes. 
-			5. The CSV Data must not contain header rows.');
+		$f->description = $this->_('Values entered here overwrite those in the matrix table!');
+		$f->notes = $this->_("The notes outlined above in 'CSV File' are applicable here.");
+		$f->collapsed = Inputfield::collapsedYes;
 
 		$fieldset->add($f);
 
@@ -347,8 +363,63 @@ class InputfieldMatrix extends Inputfield {
 
 		$name = 'matrix_' . $this->attr('name');
 
-		//dealing with manually entered values
-		if ($input->{"{$name}_csvdata"} == '') {
+		$csvFilename = $_FILES["{$name}_csvfile"]["name"];
+		$csvPasted = $input->{"{$name}_csvpasted"};
+		$csvDelimiter = $input->csv_column_separator;
+		$csvEnclosure = $input->csv_column_enclosure;
+
+		//dealing with uploaded csv/txt file
+		if($csvFilename !='') {
+
+				//WireUpload stuff
+				$validExts = array('txt', 'csv');//allow only .csv and .txt files
+
+				$csvFileProcess = new WireUpload("{$name}_csvfile");//name of csv file upload <input>
+				$csvFileProcess->setOverwrite(true);//overwrite files
+				$csvFileProcess->setMaxFiles(1);//only allow one file!
+				$csvFileProcess->setDestinationPath($this->page->filesManager()->path());//temporarily upload to current page's /assets/files/
+				$csvFileProcess->setValidExtensions($validExts);//check for valid file extensions
+
+				//upload the csv/txt file
+				$file = $csvFileProcess->execute();
+				
+				//if no valid file found, show error message and abort
+				if(!count($file)) {
+								$this->error($this->_('You need to upload file with a valid extension!'));
+								return false;
+				}
+				
+				$csvTempFileName = 'matrix-temp-data.csv';
+				$csvFilePath = $this->page->filesManager()->path;
+				
+				//rename the file including its extension
+				$csvRenameFile = rename($csvFilePath . $csvFilename, $csvFilePath . $csvTempFileName);//returns true on success
+				
+				//if file successfully renamed
+				if($csvRenameFile) $csvRawData = $this->page->filesManager()->path . $csvTempFileName;//full path to our temp csv file
+
+				//first just double checking we got the renamed file. we pass this to prepareCSV()
+				if(is_file($csvRawData)) {
+							$matrices = $this->prepareCSV($csvRawData, $csvDelimiter, $csvEnclosure);
+				}
+
+				else {
+								$this->error($this->_('We did not find a valid file! Please retry.'));
+								return false;
+				}
+
+		}
+
+		//dealing with copy-pasted csv values
+		elseif($csvPasted !='') {
+
+					$csvRawData = $csvPasted;
+					$matrices = $this->prepareCSV($csvRawData, $csvDelimiter, $csvEnclosure);
+
+		}
+
+		//if no file or no copy-pasted values, we are dealing with manually entered matrix values (i.e. none-CSV data)
+		else {
 
 					$matrices = $this->field->type->getBlankValue($this->page, $this->field);
 
@@ -378,18 +449,8 @@ class InputfieldMatrix extends Inputfield {
 
 					}//end foreach
 
-					$this->message(sprintf(_n("Saved %d matrix value.", "Saved %d matrix values.", $count), $count));//tell user how many values were saved
-
-		}
-
-		//dealing with csv values
-		else {
-
-					$csvRawData = $input->{"{$name}_csvdata"};
-					$csvDelimiter = $input->csv_column_separator;
-					$csvEnclosure = $input->csv_column_enclosure;
-
-					$matrices = $this->prepareCSV($csvRawData, $csvDelimiter, $csvEnclosure);
+					//tell user how many values were saved
+					$this->message(sprintf(_n("Saved %d matrix value.", "Saved %d matrix values.", $count), $count));
 
 		}
 	
@@ -400,7 +461,7 @@ class InputfieldMatrix extends Inputfield {
 		//if things have changed, we take the new values
 		if("$matrices" != "$this->value") {
 			
-				$this->attr('value', $matrices); 
+				$this->attr('value', $matrices);
 				$this->trackChange('value'); 
 		}
 		
@@ -467,55 +528,122 @@ class InputfieldMatrix extends Inputfield {
 		$i = 0;//rows counter
 		$j = 0;//columns counter
 
-		//loop through the raw csv values line by line prepping our CSV values for later processing
-		foreach(explode("\n", $csvRawData) as $row){
+		/*					
+		#### creating an array mirroring our db structure ###
+		save row->id, col->id, csv value as below:
 
-				//convert csv string
-				$csvData = str_getcsv($row, $csvDelimiter == "tab" ? chr(9) : $csvDelimiter, $csvEnclosure);//check delimiter type here
-				//chr(9) is ASCII standard character for TAB	        
-		        
-		        foreach ($columns as $col) {
+			array (
 
-						//if value not set OR if value set but empty, we skip it and the related column and move to the next column
-						if( (!isset($csvData[$j])) || (isset($csvData[$j]) && !strlen(str_replace(' ', '', $csvData[$j]))) ) {
-								$j++;
-								continue;
-						}
+						[0] =>	array (
 
-						/*					
-						save row->id, col->id and csv value in the format 
+										[0] => row->id
+										[1] => col-id
+										[2] => value
+						)
 
-							array (
+			)
 
-										[0] =>	array (
-
-														[0] => row->id
-														[1] => col-id
-														[2] => value
-										)
-
-							)
-
-						*/
-						
-						//we'll use this array to write to a csv file to read through using LOAD DATA INFILE
-						//we need this step since our $csvRawData is in a matrix table format
-						// there'll be now way to flip it using LOAD DATA INFILE to correctly insert the row,column,value data in the db
-						$data[] = array((int)$rows[$i], (int)$col , $this->sanitizer->text($csvData[$j]));
-						$j++;
-						if($j == $cntCols) break;//if csv data columns exceed columns in matrix table we abort
-				}
-
-				$i++;
-				$j=0;//reset the column counter for next loop
-				if($i == $cntRows) break;//if csv data rows exceed rows in matrix table we abort
+		*/
 		
-		}//end foreach explode $csvRawData
+		/*
+			++ if uploading/copy-pasting csv data, we'll use this array in one of two ways: ++
 
-		//if use chose to use LOAD DATA INFILE (this property was set in FieldtypeMatrix getInputfield())
+			(1) if using LOAD DATA INFILE:				
+				- we need this step since our $csvRawData is in a matrix table format
+				- there'll be no way to flip the values using LOAD DATA INFILE to correctly insert the row,column,value data in the db
+				- So, we have to do it this way
+		
+			(2) if saving csv values using 'normal' MatrixArray/Matrix method
+				- we'll later use the array with new Matrix() to save values to db
+		*/
+
+		//if csv file uploaded [matrix-temp-data.csv]
+		if(is_file($csvRawData)) {
+
+				$csvFilename = $csvRawData;
+
+				//deal with Mac line endings
+				ini_set('auto_detect_line_endings', true);
+				
+				//open our csv file as read-only
+				$handle = fopen($csvFilename, "r");
+
+				//convert csv string to array
+				//we also check delimiter type here - chr(9) is ASCII standard character for TAB
+				while(($csvData = fgetcsv($handle, 0, $csvDelimiter == "tab" ? chr(9) : $csvDelimiter, $csvEnclosure)) !== false) {
+					$cnt = count($data);
+		
+					foreach ($columns as $col) {
+
+							//if value not set OR if value set but empty, we skip it and the related column and move to the next column
+							//note, however, that we are not skipping blank lines wholesale as those may be intentional!
+							if( (!isset($csvData[$j])) || (isset($csvData[$j]) && !strlen(str_replace(' ', '', $csvData[$j]))) ) {
+									$j++;
+									continue;
+							}
+
+							//first, attempt to auto-detect char encoding of 'troublesome' characters
+							//then encode to UTF-8
+							$value = $this->charEncode($csvData[$j], 'UTF-8');
+
+							$data[] = array((int)$rows[$i], (int)$col , $this->sanitizer->text($value));
+							#$data[] = array( (int)$rows[$i], (int)$col , $this->sanitizer->text($csvData[$j]));
+							
+							$j++;
+							if($j == $cntCols) break;//if csv data columns exceed columns in matrix table we abort
+					
+					}//end foreach $columns as $col
+
+					$i++;
+					$j=0;//reset the column counter for next loop
+					if($i == $cntRows) break;//if csv data rows exceed rows in matrix table we abort
+
+				}//end while $data...
+
+				fclose($handle);//close the resource stream
+				ini_set('auto_detect_line_endings', false);//close auto detect line endings
+				
+				if(is_file($csvRawData)) unlink($csvRawData);//delete 'matrix-temp-data.csv'
+
+		}
+
+		//else copy-pasted csv
+		else {
+
+				//loop through the raw csv values line by line prepping our CSV values for later processing
+				foreach(explode("\n", $csvRawData) as $row){
+
+						//convert csv string to array
+						//we also check delimiter type here - chr(9) is ASCII standard character for TAB
+						$csvData = str_getcsv($row, $csvDelimiter == "tab" ? chr(9) : $csvDelimiter, $csvEnclosure);	        
+				        
+						foreach ($columns as $col) {
+
+								//if value not set OR if value set but empty, we skip it and the related column and move to the next column
+								if( (!isset($csvData[$j])) || (isset($csvData[$j]) && !strlen(str_replace(' ', '', $csvData[$j]))) ) {
+										$j++;
+										continue;
+								}
+
+								$data[] = array((int)$rows[$i], (int)$col , $this->sanitizer->text($csvData[$j]));
+								$j++;
+								if($j == $cntCols) break;//if csv data columns exceed columns in matrix table we abort
+
+						}//end foreach $columns as $col
+
+						$i++;
+						$j=0;//reset the column counter for next loop
+						if($i == $cntRows) break;//if csv data rows exceed rows in matrix table we abort
+				
+				}//end foreach explode $csvRawData
+
+
+		}//end else copy-pasted csv
+		
+		//if user chose to use LOAD DATA INFILE (this property was set in FieldtypeMatrix getInputfield())
 		if ($this->loadDataInfile) {
 
-				$this->processCSVLoadDataInfile($data, $csvDelimiter, $csvEnclosure);
+				$this->processCSVLoadDataInfile($data, $csvDelimiter == "tab" ? chr(9) : $csvDelimiter, $csvEnclosure);
 				return;//back to base after processing
 		}
 
@@ -536,7 +664,7 @@ class InputfieldMatrix extends Inputfield {
 
 		$matrices = $this->field->type->getBlankValue($this->page, $this->field);
 
-		$count = 0;//counter for values saved
+		$count = 0;//counter for number of values saved
 
 		//loop through the sanitized csv data. Empty values have already been removed in prepareCSV()
 		foreach ($data as $d) {
@@ -560,7 +688,7 @@ class InputfieldMatrix extends Inputfield {
 		}//end foreach $data as $d
 
 		$this->message(sprintf(_n("Saved %d matrix value.", "Saved %d matrix values.", $count), $count));//tell user how many values were saved
-		
+
 		return $matrices;//return the matrices object
 
 	}
@@ -574,14 +702,18 @@ class InputfieldMatrix extends Inputfield {
 		//prepare some variables
 		$page = $this->page;
 
-		$csvFilename = $page->filesManager()->path() . 'data.csv'; //this pages /assets/files/ folder
+		$csvFilename = $page->filesManager()->path() . 'matrix-data.csv'; //this pages /assets/files/ folder
 
-		//force create and write to a temp 'data.csv' file. we'll delete it later
+		//deal with Mac line endings
+		ini_set('auto_detect_line_endings', true);
+
+		//force create and write to a temp 'matrix-data.csv' file. we'll delete it later
 		$handle = fopen($csvFilename, 'w+');
 
-		foreach ($data as $line) fputcsv($handle, $line, $csvDelimiter, $csvEnclosure);//write csv values to data.csv
+		foreach ($data as $line) fputcsv($handle, $line, $csvDelimiter, $csvEnclosure);//write csv values to matrix-data.csv
 
-		fclose($handle);//closee the resource stream
+		fclose($handle);//close the resource stream
+		ini_set('auto_detect_line_endings', false);//close auto detect line endings
 
 		//$database is the ProcessWire PDO way.
 		$database = $this->wire('database');
@@ -627,11 +759,41 @@ class InputfieldMatrix extends Inputfield {
 
 		$count = $query->fetchColumn();//fetch the count
 
-		if(is_file($csvFilename)) unlink($csvFilename);//delete the data.csv file we created earlier
+		if(is_file($csvFilename)) unlink($csvFilename);//delete the matrix-data.csv file we created earlier for LOAD DATA INFILE
 
 		$this->message(sprintf(_n("Saved %d matrix value.", "Saved %d matrix values.", $count), $count));//tell user how many values were saved
 
 	}
+
+
+	/**
+	 * Attempt to auto-encode unrecognised characters during fopen operations.
+	 * If detection fails, at least values are parsed without ??
+	 *
+	 * @author aaron@aarongough.com - php.net
+	 */
+	public function charEncode ($source, $targetEncoding) {
+		
+		//detect the character encoding of the incoming file
+		$encoding = mb_detect_encoding($source, "auto");
+
+		//escape all of the question marks so we can remove artifacts from
+		//the unicode conversion process
+		$target = str_replace( "?", "[question_mark]", $source );
+
+		//convert the string to the target encoding
+		$target = mb_convert_encoding( $target, $targetEncoding, $encoding);
+
+		//remove any question marks that have been introduced because of illegal characters
+		$target = str_replace( "?", "", $target );
+
+		//replace the token string "[question_mark]" with the symbol "?"
+		$target = str_replace( "[question_mark]", "?", $target );
+
+		return $target;
+
+	}
+
 
 
 }
