@@ -152,7 +152,7 @@ $results = $pages->find("matrix.value<1000");
 //find some results in the matrix (called products) of this page
 $results = $page->products->find("column=$country, value=Singapore");//or
 $page->products->find("column=$age, value>=25");
-//$column and $country and $age would be IDs of two of your column pages
+//$country and $age would be IDs of two of your column pages
 
 ```
 
