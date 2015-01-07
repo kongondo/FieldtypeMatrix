@@ -11,7 +11,7 @@
 * @author Kongondo <kongondo@gmail.com>
 * @author Ryan Cramer 
 * 
-* Largely based on original code from Ryan Cramer's FieldtypeEvnents. 
+* Largely based on original code from Ryan Cramer's FieldtypeEvents. 
 *
 * Lincensed under GNU/GPL v2.
 *
@@ -32,7 +32,7 @@ class FieldtypeMatrix extends FieldtypeMulti {
 		return array(
 			'title' => 'Matrix',
 			'author' => 'Kongondo',
-			'version' => 9,
+			'version' => 100,
 			'href' => 'https://processwire.com/talk/topic/8581-module-matrix-fieldtype-inputfield/',
 			'summary' => 'Field that stores values in a 2D-matrix table in a page.',
 			'installs' => 'InputfieldMatrix', 
@@ -63,8 +63,8 @@ class FieldtypeMatrix extends FieldtypeMulti {
 		//our inputfield requires a Page and Field (most Inputfields don't)
 		$inputfield->setPage($page);//this is a method in InputfieldMatrix
 		$inputfield->setField($field);//this is a method in InputfieldMatrix
-		$inputfield->set('rowSelector', $field->rowSelector);//we'll use this to grab a selector string for finding matrix_row header pages from FieldtypeMatrix Details Tab
-		$inputfield->set('columnSelector', $field->columnSelector);//we'll use this to grab a selector string for finding matrix_column pages from FieldtypeMatrix Details Tab
+		$inputfield->set('rowSelector', $field->rowSelector);//we'll use this to grab a selector string for finding matrix->row header pages from FieldtypeMatrix Details Tab
+		$inputfield->set('columnSelector', $field->columnSelector);//we'll use this to grab a selector string for finding matrix->column pages from FieldtypeMatrix Details Tab
 		//if specified overrides above two selectors. Holds the name of a page field from which to grab parent of matrix row + column pages
 		//needs two pages to be selected. First=row pages parent; Second=column pages parent
 		$inputfield->set('parentRowColumnFieldName', $field->parentRowColumnFieldName);
@@ -241,9 +241,9 @@ class FieldtypeMatrix extends FieldtypeMulti {
 			
 			$m = new Matrix();
 
-			$m->matrix_row = $v['data']; //note we are converting 'data' to 'matrix_row'
-			$m->matrix_column = $v['matrix_column'];
-			$m->matrix_value = $v['matrix_value'];
+			$m->row = $v['data']; //note we are converting 'data' to 'matrix->row'
+			$m->column = $v['matrix_column'];
+			$m->value = $v['matrix_value'];
 			
 			$m->setTrackChanges(true);//track changes for individual matrix
 			$matrices->add($m);//add to matrices
@@ -273,16 +273,16 @@ class FieldtypeMatrix extends FieldtypeMulti {
 		//then just return a blank array
 		if(!$value instanceof MatrixArray) return $sleepValue;
 
-		//make the matrices sort by matrix_row ascending
-		$value->sort('matrix_row');		
+		//make the matrices sort by matrix->row ascending
+		$value->sort('row');		
 
 		//convert each Matrix to an array within sleepValue
 		foreach($value as $m) {
 
 				$sleepValue[] = array(
-					'data' => (int) $m->matrix_row, //note: matrix_row is becoming data which is a required column in a Fieldtype
-					'matrix_column' => $m->matrix_column,
-					'matrix_value' => $m->matrix_value,
+					'data' => (int) $m->row, //note: matrix->row is becoming data which is a required column in a Fieldtype
+					'matrix_column' => (int) $m->column,
+					'matrix_value' => $m->value,
 					
 				); 
 		}//end foreach $value as $m				
@@ -336,14 +336,14 @@ class FieldtypeMatrix extends FieldtypeMulti {
 
 		$schema = parent::getDatabaseSchema($field); 
 
-		//'data' is a required field for any Fieldtype, and we're using it to represent our 'matrix_row' field (column in db)
-		$schema['data'] = 'INT NOT NULL DEFAULT 0';//we reuse this required field/column for matrix_row
-		$schema['matrix_column'] = 'INT NOT NULL DEFAULT 0';//matrix_column
+		//'data' is a required field for any Fieldtype, and we're using it to represent our 'matrix->row' field (column in db)
+		$schema['data'] = 'INT NOT NULL DEFAULT 0';//we reuse this required field/column for matrix->row
+		$schema['matrix_column'] = 'INT NOT NULL DEFAULT 0';
 		$schema['matrix_value'] = "VARCHAR(255) DEFAULT ''";
 
 		//indexes, for any fields that need to be searchable from selectors
 		//make all our fields searchable
-		$schema['keys']['data'] = 'KEY data(data)';//searchable row = page->id of matrix_row
+		$schema['keys']['data'] = 'KEY data(data)';//searchable row = page->id of matrix->row
 		$schema['keys']['matrix_column'] = 'KEY matrix_column(matrix_column)';//searchable cc = $page->id of column
 		$schema['keys']['matrix_value'] = 'FULLTEXT KEY `matrix_value` (`matrix_value`)';
 
@@ -356,8 +356,11 @@ class FieldtypeMatrix extends FieldtypeMulti {
 	 */
 	public function getMatchQuery($query, $table, $subfield, $operator, $value) {
 
-		//If searching 'matrix_row' then assume our default (data) field 
-		if($subfield == 'matrix_row') $subfield = 'data';
+		//If searching 'row' then assume our default (data) field 
+		#if($subfield == 'matrix_row') $subfield = 'data';
+		if($subfield == 'row') $subfield = 'data';//If searching 'row' then assume our default (data) field 
+		if($subfield == 'column') $subfield = 'matrix_column';//If searching 'column' then assume matrix_column
+		if($subfield == 'value') $subfield = 'matrix_value';//If searching 'value' then assume matrix_value
 
 		return parent::getMatchQuery($query, $table, $subfield, $operator, $value); 
 	}

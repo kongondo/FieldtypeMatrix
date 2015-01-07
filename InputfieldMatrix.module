@@ -29,9 +29,9 @@ class InputfieldMatrix extends Inputfield {
 		return array(
 			'title' => 'Matrix',
 			'author' => 'Kongondo',
-			'version' => 9,
+			'version' => 100,
 			'href' => 'https://processwire.com/talk/topic/8581-module-matrix-fieldtype-inputfield/',
-			'summary' => 'Input field for a 2D-matrix.',
+			'summary' => 'Inputfield for a 2D-matrix.',
 			'requires' => 'FieldtypeMatrix', 
 			);
 	}
@@ -158,7 +158,7 @@ class InputfieldMatrix extends Inputfield {
 		foreach($values as $m) {
 
 				//get the row page
-				$rp = $pages->get($m->matrix_row);
+				$rp = $pages->get($m->row);
 				
 				//in case the matrix rows parent was changed and is different from the rows parent of the saved db values...
 				//we skip such rows in readiness for deletion
@@ -170,19 +170,19 @@ class InputfieldMatrix extends Inputfield {
 				//if(!$rp || $rp->is('unpublished') || $rp->is('hidden')) continue;//syntax will only work in PW 2.5+ ?
 
 				//build the saved values array
-				#$dbMatrix[$m->matrix_row][$m->matrix_column] = $m->matrix_value;//
-				$dbMatrix[$m->matrix_row][$m->matrix_column] = $this->sanitizer->entities($m->matrix_value);//@@todo - need to sanitize this values for display?
+				#$dbMatrix[$m->row][$m->column] = $m->value;//
+				$dbMatrix[$m->row][$m->column] = $this->sanitizer->entities($m->value);//@@todo - need to sanitize this values for display?
 
 				//get the column page
-				$cp = $pages->get($m->matrix_column);
+				$cp = $pages->get($m->column);
 
 				//remove matrix-columns that are no longer needed i.e. 'unpublished', 'hidden', 'deleted' or 'trashed'
-				if(!$cp || $cp->is(Page::statusUnpublished) || $cp->isHidden() || $cp->isTrash()) unset($dbMatrix[$m->matrix_row][$m->matrix_column]);
+				if(!$cp || $cp->is(Page::statusUnpublished) || $cp->isHidden() || $cp->isTrash()) unset($dbMatrix[$m->row][$m->column]);
 				
 				//in case the matrix columns parent was changed and is different from the columns parent of the saved db values...
 				//we remove such columns in readiness for deletion
 				//we only do this if a Page Field was used to select matrix columns (ditto above)
-				if($columnsParent && $cp->parent != $columnsParent) unset($dbMatrix[$m->matrix_row][$m->matrix_column]);
+				if($columnsParent && $cp->parent != $columnsParent) unset($dbMatrix[$m->row][$m->column]);
 
 		}
 
@@ -439,9 +439,9 @@ class InputfieldMatrix extends Inputfield {
 							//create a new matrix and add it to our matrices
 							$m = new Matrix();
 
-							$m->matrix_row = (int) $row;//@@todo - don't really need to sanitize here as well since done in Matrix::set() too?
-							$m->matrix_column = (int) $column;//@@todo - ditto
-							$m->matrix_value = $value;
+							$m->row = (int) $row;//@@todo - don't really need to sanitize here as well since done in Matrix::set() too?
+							$m->column = (int) $column;//@@todo - ditto
+							$m->value = $value;
 
 							$matrices->add($m);//add matrix to MatrixArray
 
@@ -677,9 +677,9 @@ class InputfieldMatrix extends Inputfield {
 					$m = new Matrix();
 
 					//these were already sanitized in prepareCSV() [and will be again in Matrix::set()]
-					$m->matrix_row		= 	$d[0];//row page->id
-					$m->matrix_column 	= 	$d[1];//column page->id
-					$m->matrix_value 	= 	$d[2];//csv value
+					$m->row		= 	$d[0];//row page->id
+					$m->column 	= 	$d[1];//column page->id
+					$m->value 	= 	$d[2];//csv value
 
 					$matrices->add($m);//add matrix to MatrixArray
 
