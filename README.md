@@ -1,7 +1,10 @@
 # FieldtypeMatrix
 
 This module is useful if you wish to save data in a **2D-matrix(grid) table**.
-The matrix table is made up of row and column headers of pages whose individual intersections form the 'matrix values'
+The matrix table is made up of row and column headers of pages whose individual intersections form the 'matrix values'.
+
+<img src='https://github.com/kongondo/FieldtypeMatrix/raw/master/screenshot1.png' />
+<img src='https://github.com/kongondo/FieldtypeMatrix/raw/master/screenshot2.png' />
 
 Pages for building the rows/columns can be selected in one of two ways. **These methods are set up in the Field's 'Details Tab':**
 
