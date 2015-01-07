@@ -1,7 +1,5 @@
 # FieldtypeMatrix
 
-##Note: Beta version!
-
 This module is useful if you wish to save data in a **2D-matrix(grid) table**.
 The matrix table is made up of row and column headers of pages whose individual intersections form the 'matrix values'
 
@@ -11,6 +9,8 @@ Pages for building the rows/columns can be selected in one of two ways. **These 
 Here you enter valid ProcessWire selectors for finding pages to build your matrix rows and columns respectively in the relevant input fields found in your matrix field's 'Details Tab'.
 If you use this method, it means all instances of the field across different templates and pages will have identical rows and columns.
 This also means that if you wanted to create matrices with different rows and columns, you would have to create a new field for each.
+
+
 **2. Specify a Multiplepage field for row/column parent pages selections**
 If used, this method overrides method #1 above.
 The method allows you to reuse the same matrix field to create matrix tables made up of different rows and columns on a page by page basis.
@@ -32,8 +32,10 @@ FieldtypeMatrix stores row and column pages data as their respective page->id. M
 2. Car types (rows) vs engine size (columns) and their warranty (value).
 3. Gender (rows) vs Age (columns) and their favourite movie for each combination.
 
+See more examples in the support forum.
+
 The module allows the creation of matrix tables of any sizes (rows x columns).
-The rows and columns dynamically grow/shrink depending on the addition of row/column pages that match the selector set up in the Field's 'Details Tab'.
+The rows and columns dynamically grow/shrink depending on the addition of row/column pages that match what you set in the matrix field's settings in the Field's 'Details Tab'.
 Currently, if such pages are deleted/trashed/hidden/unpublished, their data (and presence) in the matrix are also deleted.
 
 ## Install
@@ -52,9 +54,9 @@ A typical output case for this module would work like this:
 foreach($page->matrix as $m) {
   echo "
     <p>
-    Colour: $m->matrix_row<br />
-    Size: $m->matrix_column<br />
-    Price: $m->matrix_value
+    Colour: $m->row<br />
+    Size: $m->column<br />
+    Price: $m->value
     </p>
     ";
 }
@@ -66,7 +68,7 @@ Of if you want to output a table
 //create array to build matrix
 $products = array();
 
-foreach($page->matrix as $m) $products[$m->matrix_row][$m->matrix_column] = $m->matrix_value;
+foreach($page->matrix as $m) $products[$m->row][$m->column] = $m->value;
 
 $tbody ='';//matrix rows
 $thcols = '';//matrix table column headers
@@ -90,7 +92,7 @@ foreach ($products as $row => $cols) {
                     //avoid outputting extra duplicate columns
                     if ($i < $count) $thcols .= "<th class='MatrixColumnHeader'>" . $columnHeader . "</th>";
                       
-                    //output matrix_values
+                    //output values
                     $currency = $value > 0 ? '£' : '';
                     $tbody .= "<td>" . $currency . $value . "</td>";
                     
@@ -142,13 +144,25 @@ This enables you to find matrix items by either row types (e.g. colours) or colu
 
 ```php
 //find all pages that have a matrix value of less than 1000
-$results = $pages->find("matrix.matrix_value<1000"); 
+$results = $pages->find("matrix.value<1000"); 
  
+```
+
+```php
+//find some results in the matrix (called products) of this page
+$results = $page->products->find("column=$country, value=Singapore");//or
+$page->products->find("column=$age, value>=25");
+//$column and $country and $age would be IDs of two of your column pages
+
 ```
 
 Other more complex queries are possible, e.g. find all products that are either red or purple in colour, come in x-large size and are priced less than $50.
 
 ##Changelog
+
+###Version 1.0.0
+Changed version to 1.
+Changed status to stable.
 
 ###Version 0.0.9
 Fixed a character encoding issue regarding fopen.
