@@ -21,14 +21,14 @@ class Matrix extends WireData {
 	public function __construct() {
 
 		//define the fields that represent our matrix's items
-		$this->set('matrix_row', '');
-		$this->set('matrix_column', '');
-		$this->set('matrix_value', '');
+		$this->set('row', '');
+		$this->set('column', '');
+		$this->set('value', '');
 
 	}
 
 	/**
-	 * Set a value to the matrix: matrix_row, matrix_column, matrix_value
+	 * Set a value to the matrix: row, column, value
 	 *
 	 */
 	public function set($key, $value) {		
@@ -39,13 +39,13 @@ class Matrix extends WireData {
 		} 
 
 		//sanitize values as integers
-		elseif($key == 'matrix_row' || $key == 'matrix_column') {				
+		elseif($key == 'row' || $key == 'column') {				
 				
 				$value = (int) $value; 
 		}
 
 		//regular text sanitizer
-		elseif($key == 'matrix_value') {			
+		elseif($key == 'value') {			
 				
 				$value = $this->sanitizer->text($value); 
 		}
@@ -54,7 +54,7 @@ class Matrix extends WireData {
 	}
 
 	/**
-	 * Retrieve a value from the matrix: matrix_row, matrix_column, vamatrix_valuelue
+	 * Retrieve a value from the matrix: row, column, value
 	 *
 	 */
 	public function get($key) {
@@ -65,10 +65,10 @@ class Matrix extends WireData {
 		if($this->page && $this->page->of()) {
 				
 				//sanitize our page IDs as integers
-				if($key == 'matrix_row' || $key == 'matrix_column') $value = (int) $value; 
+				if($key == 'row' || $key == 'column') $value = (int) $value; 
 				
 				//regular text sanitizer for our values
-				if($key == 'matrix_value') $value = $this->sanitizer->text($value);
+				if($key == 'value') $value = $this->sanitizer->text($value);
 
 		}
 
@@ -89,9 +89,9 @@ class Matrix extends WireData {
 		//turn on output formatting for our rendering (if it's not already on)
 		if(!$of) $this->page->of(true);
 
-		$out = "<p>" . 	$pages->get($this->matrix_row)->title . "<br>" . 
-						$pages->get($this->matrix_column)->title . "<br>
-						<em>$this->matrix_value</em><br>					
+		$out = "<p>" . 	$pages->get($this->row)->title . "<br>" . 
+						$pages->get($this->column)->title . "<br>
+						<em>$this->value</em><br>					
 				</p>";	
 		
 		if(!$of) $this->page->of(false);
