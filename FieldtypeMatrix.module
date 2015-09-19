@@ -65,6 +65,11 @@ class FieldtypeMatrix extends FieldtypeMulti {
 		$inputfield->setField($field);//this is a method in InputfieldMatrix
 		$inputfield->set('rowSelector', $field->rowSelector);//we'll use this to grab a selector string for finding matrix->row header pages from FieldtypeMatrix Details Tab
 		$inputfield->set('columnSelector', $field->columnSelector);//we'll use this to grab a selector string for finding matrix->column pages from FieldtypeMatrix Details Tab
+		
+		//@@todo - for custom PHP code snippet to find row and column pages (separately)
+		#$inputfield->set('rowFindPagesCode', $field->rowFindPagesCode);
+		#$inputfield->set('columnFindPagesCode', $field->columnFindPagesCode);
+
 		//if specified overrides above two selectors. Holds the name of a page field from which to grab parent of matrix row + column pages
 		//needs two pages to be selected. First=row pages parent; Second=column pages parent
 		$inputfield->set('parentRowColumnFieldName', $field->parentRowColumnFieldName);
@@ -116,6 +121,35 @@ class FieldtypeMatrix extends FieldtypeMulti {
 		$f->notes = $this->_('Example: parent=/products/, template=product, sort=name');
 		
 		$inputfields->append($f);
+
+		/*
+
+		@@todo -> addition for custom php code to return rows and columns (independently)
+
+
+		//input for custom php code or for finding 'row' pages
+		$f = $this->modules->get("InputfieldTextarea");
+		$f->attr('name', 'rowFindPagesCode');
+		$f->attr('value', $field->rowFindPagesCode);
+		$f->label = $this->_('Matrix Row Pages Custom PHP Code');
+		$f->description = $this->_('Enter a selector to find pages for the matrix rows (y-axis).');//@@todo - amend
+		$f->notes = $this->_('Example: parent=/products/, template=product, sort=name');//@@todo - ditto
+		
+		$inputfields->append($f);
+
+		//input for custom php code or for finding 'column' pages
+		$f = $this->modules->get("InputfieldText");
+		$f->attr('name', 'columnFindPagesCode');
+		$f->attr('value', $field->columnFindPagesCode);
+		$f->label = $this->_('Matrix Column Pages Custom PHP Code');
+		$f->description = $this->_('Enter a selector to find pages for the matrix columns (x-axis).');//@@todo - amend
+		$f->notes = $this->_('Example: parent=/products/, template=product, sort=name');//@@todo - ditto
+		
+		$inputfields->append($f);
+
+
+
+		*/
 
 		//name of Page Field for specifying row + column parent pages whose children will constitute matrix-rows and columns respectively
 		//if this field is NOT empty (used), it overrides the above two selector fields

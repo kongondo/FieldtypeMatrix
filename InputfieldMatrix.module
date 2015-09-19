@@ -66,9 +66,13 @@ class InputfieldMatrix extends Inputfield {
 		$rowSelector = $this->rowSelector;//this property was set in FieldtypeMatrix getInputfield()
 		$columnSelector = $this->columnSelector;//this property was set in FieldtypeMatrix getInputfield()
 		
+		//@@todo => add for both rows and columns, $this->rowFindPagesCode and $this->columnFindPagesCode
+		#$rowFindPagesCode = $this->rowFindPagesCode;
+		#$columnFindPagesCode = $this->columnFindPagesCode;
+		
 		$editURL = $this->wire('config')->urls->admin . 'setup/field/edit?id=' . $this->field->id;
 		
-		### first we deal with errors. We'll return these as strings to oupput in $this->error() in render() ###
+		### first we deal with errors. We'll return these as strings to output in $this->error() in render() ###
 
 		//in neither a Page Field nor selectors for finding pages to build matrix rows/columns specified set error message
 		if((!$parentRowColumnSelector) && (!$rowSelector || !$columnSelector))
@@ -115,8 +119,25 @@ class InputfieldMatrix extends Inputfield {
 		//if Page Field NOT specified, we use specified row/column selectors instead
 		else {
 
+				//@@TODO - AS PER ADRIAN'S REQUEST, WILL ADD HERE ABILITY TO RETURN (INDIPENDENTLY FOR ROWS AND COLUMNS) PAGES USING CUSTOM PHP CODE (SIMILAR TO PAGE FIELDS; JUST COPY RYAN'S CODE :-))
+				//@@TODO - IF THE CODE BELOW IS TOO LONG; THEN JUST THROW TO FUNCTIONS, I.E. ONE FOR $rows and the other for $columns
+				//@@TODO - ALSO, ALLOW MIX AND MATCH, I.E. COLUMN PAGES CAN BE FOUND USING CUSTOM PHP CODE AND ROWS USING SELECTOR
+
 				//find all matrix-row pages
 				$rows = $pages->find($rowSelector);//ProcessWire will throw an exception here if the selector is not valid
+
+				/*
+
+				@@TODO - FOR CUSTOM PHP CODE REQUEST
+
+				if ($rowSelector) {
+						$rows = $pages->find($rowSelector);//ProcessWire will throw an exception here if the selector is not valid# code...
+				}
+
+				else $rows = //@@todo => here, the eval code (add AS FUNCTION IN HERE) from InputfieldPage.module. DO SAME BELOW FOR COLUMNS
+				//@@TODO - ALSO CONSIDER THROWING THESE INTO OWN FUNCTION(S)
+
+				*/
 
 				//find all matrix-column pages
 				$columns = $pages->find($columnSelector);//ProcessWire will throw an exception here if the selector is not valid
@@ -154,7 +175,7 @@ class InputfieldMatrix extends Inputfield {
 		//get our saved db matrix values
 		$dbMatrix = array();//for storing row/column values already saved in db
 
-		//loop through saved db vakues
+		//loop through saved db values
 		foreach($values as $m) {
 
 				//get the row page
@@ -261,7 +282,7 @@ class InputfieldMatrix extends Inputfield {
 
 							//input name will be in the format 'R5282_C5289' to match row and column page IDs respectively
 							#$tbody .= "<td><input type='text' name='matrix[R" . $rh->id . "_C" . $ch->id . "]' value='" . $value . "'></td>";
-							$tbody .= "<td><input type='text' name='matrix_" . $this->field->name. "[R" . $rh->id . "_C" . $ch->id . "]' value='" . $value . "'></td>";
+							$tbody .= "<td><input type='text' name='matrix_" . $this->field->name . "[R" . $rh->id . "_C" . $ch->id . "]' value='" . $value . "'></td>";
 
 				}
 
@@ -385,7 +406,7 @@ class InputfieldMatrix extends Inputfield {
 				
 				//if no valid file found, show error message and abort
 				if(!count($file)) {
-								$this->error($this->_('You need to upload file with a valid extension!'));
+								$this->error($this->_('You need to upload a file with a valid extension!'));
 								return false;
 				}
 				
