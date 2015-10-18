@@ -36,19 +36,11 @@ class Matrix extends WireData {
 		if($key == 'page') {
 			$this->page = $value; 
 			return $this;
-		} 
-
+		}
 		//sanitize values as integers
-		elseif($key == 'row' || $key == 'column') {				
-				
-				$value = (int) $value; 
-		}
-
+		elseif($key == 'row' || $key == 'column') $value = (int) $value; 
 		//regular text sanitizer
-		elseif($key == 'value') {			
-				
-				$value = $this->sanitizer->text($value); 
-		}
+		elseif($key == 'value') $value = $this->sanitizer->text($value); 
 
 		return parent::set($key, $value);//back to WireData
 	}
@@ -63,12 +55,14 @@ class Matrix extends WireData {
 
 		//if the page's output formatting is on, then we'll return sanitized values
 		if($this->page && $this->page->of()) {
-				
-				//sanitize our page IDs as integers
-				if($key == 'row' || $key == 'column') $value = (int) $value; 
-				
-				//regular text sanitizer for our values
-				if($key == 'value') $value = $this->sanitizer->text($value);
+
+			//for rows and columns show user friendly output (titles rather than IDs)
+			if($key == 'row' || $key == 'column') {					
+				$p = wire('pages')->get((int)$value);
+				if($p && $p->id > 0) $value = $p->title;
+			}			
+			//regular text sanitizer for our values
+			elseif($key == 'value') $value = $this->sanitizer->text($value);
 
 		}
 
@@ -89,10 +83,10 @@ class Matrix extends WireData {
 		//turn on output formatting for our rendering (if it's not already on)
 		if(!$of) $this->page->of(true);
 
-		$out = "<p>" . 	$pages->get($this->row)->title . "<br>" . 
-						$pages->get($this->column)->title . "<br>
+		$out = "<p>" . 	$this->row . "<br>" .
+						$this->column . "<br>
 						<em>$this->value</em><br>					
-				</p>";	
+		</p>";	
 		
 		if(!$of) $this->page->of(false);
 
@@ -109,4 +103,3 @@ class Matrix extends WireData {
 	}
 
 }
-

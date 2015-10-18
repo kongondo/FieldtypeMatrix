@@ -8,10 +8,9 @@
 * Row and column values are stored as the respective pages IDs.
 * Their matrix values are stored as VARCHAR(255).
 *
-* @author Kongondo <kongondo@gmail.com>
-* @author Ryan Cramer 
+* @author Francis Otieno (Kongondo) <kongondo@gmail.com> kongondo.com
 * 
-* Largely based on original code from Ryan Cramer's FieldtypeEvents. 
+* @credits Ryan Cramer: Some code from FieldtypeEvents. 
 *
 * Lincensed under GNU/GPL v2.
 *
@@ -31,13 +30,17 @@ class FieldtypeMatrix extends FieldtypeMulti {
 	public static function getModuleInfo() {
 		return array(
 			'title' => 'Matrix',
-			'author' => 'Kongondo',
-			'version' => 100,
+			'author' => 'Francis Otieno (Kongondo)',
+			'version' => 101,
 			'href' => 'https://processwire.com/talk/topic/8581-module-matrix-fieldtype-inputfield/',
-			'summary' => 'Field that stores values in a 2D-matrix table in a page.',
+			'summary' => 'Matrix: Field that stores values in a 2D-matrix table in a page.',
 			'installs' => 'InputfieldMatrix', 
 			);
 	}
+
+	//this name of the instance (field) of this fieldtype
+	public static $name;
+
 
 	/**
 	 * Initialize this Fieldtype
@@ -63,22 +66,22 @@ class FieldtypeMatrix extends FieldtypeMulti {
 		//our inputfield requires a Page and Field (most Inputfields don't)
 		$inputfield->setPage($page);//this is a method in InputfieldMatrix
 		$inputfield->setField($field);//this is a method in InputfieldMatrix
-		$inputfield->set('rowSelector', $field->rowSelector);//we'll use this to grab a selector string for finding matrix->row header pages from FieldtypeMatrix Details Tab
-		$inputfield->set('columnSelector', $field->columnSelector);//we'll use this to grab a selector string for finding matrix->column pages from FieldtypeMatrix Details Tab
-		
-		//@@todo - for custom PHP code snippet to find row and column pages (separately)
-		#$inputfield->set('rowFindPagesCode', $field->rowFindPagesCode);
-		#$inputfield->set('columnFindPagesCode', $field->columnFindPagesCode);
+		$inputfield->set('rowSelector', $field->rowSelector);//use selector string for finding matrix->row header pages from FieldtypeMatrix Details Tab
+		$inputfield->set('columnSelector', $field->columnSelector);//ditto for finding matrix->column pages		
+		$inputfield->set('rowFindPagesCode', $field->rowFindPagesCode);//use to grab and eval() custom PHP code for matrix-> row pages
+		$inputfield->set('columnFindPagesCode', $field->columnFindPagesCode);//ditto for matrix->column pages
 
-		//if specified overrides above two selectors. Holds the name of a page field from which to grab parent of matrix row + column pages
+		//if specified overrides above selectors & custom PHP code.
+		//Holds the name of a page field from which to grab parent of matrix row + column pages
 		//needs two pages to be selected. First=row pages parent; Second=column pages parent
 		$inputfield->set('parentRowColumnFieldName', $field->parentRowColumnFieldName);
 		$inputfield->set('rowLabelFieldName', $field->rowLabelFieldName);//we'll use this to label our matrix-row headers
-		$inputfield->set('columnLabelFieldName', $field->columnLabelFieldName);//we'll use this to label our matrix-column headers
-		//we'll use this to determine if csv data should be saved using MySQL's fast LOAD DATA INFILE
+		$inputfield->set('columnLabelFieldName', $field->columnLabelFieldName);//ditto for matrix-column headers
+		//determine if csv data should be saved using MySQL's fast LOAD DATA INFILE
 		$inputfield->set('loadDataInfile', $field->loadDataInfile);
 
 		return $inputfield;
+
 	}
 
 	/**
@@ -88,8 +91,9 @@ class FieldtypeMatrix extends FieldtypeMulti {
 	public function getBlankValue(Page $page, Field $field) {
 
 		$matrices = new MatrixArray($page);
-
 		$matrices->setTrackChanges(true);
+
+		self::$name = $field->name;
 
 		return $matrices; 
 
@@ -122,9 +126,9 @@ class FieldtypeMatrix extends FieldtypeMulti {
 		
 		$inputfields->append($f);
 
-		/*
+		
 
-		@@todo -> addition for custom php code to return rows and columns (independently)
+		#@@todo -> addition for custom php code to return rows and columns (independently)
 
 
 		//input for custom php code or for finding 'row' pages
@@ -132,24 +136,23 @@ class FieldtypeMatrix extends FieldtypeMulti {
 		$f->attr('name', 'rowFindPagesCode');
 		$f->attr('value', $field->rowFindPagesCode);
 		$f->label = $this->_('Matrix Row Pages Custom PHP Code');
-		$f->description = $this->_('Enter a selector to find pages for the matrix rows (y-axis).');//@@todo - amend
-		$f->notes = $this->_('Example: parent=/products/, template=product, sort=name');//@@todo - ditto
+		$f->description = $this->_('Enter valid PHP code to find pages for the matrix rows. This statement has access to the $page and $pages API variables, where $page refers to the page being edited. The snippet should only return a Page or PageArray. If it returns a Page, children of that Page are used as row pages. This overrides the above row selector.');//@@todo - amend
+		$f->notes = $this->_('Example: return $page->childrent("limit=10"); OR return $pages->get(1234);');
 		
 		$inputfields->append($f);
 
 		//input for custom php code or for finding 'column' pages
-		$f = $this->modules->get("InputfieldText");
+		$f = $this->modules->get("InputfieldTextarea");
 		$f->attr('name', 'columnFindPagesCode');
 		$f->attr('value', $field->columnFindPagesCode);
 		$f->label = $this->_('Matrix Column Pages Custom PHP Code');
-		$f->description = $this->_('Enter a selector to find pages for the matrix columns (x-axis).');//@@todo - amend
-		$f->notes = $this->_('Example: parent=/products/, template=product, sort=name');//@@todo - ditto
+		$f->description = $this->_('Enter valid PHP code to find pages for the matrix columns. This statement has access to the $page and $pages API variables, where $page refers to the page being edited. The snippet should only return a Page or PageArray. If it returns a Page, children of that Page are used as column pages. This overrides the above column selector.');//@@todo - amend
+		$f->notes = $this->_('Example: return $page->childrent("limit=10"); OR return $pages->get(5678);');
 		
 		$inputfields->append($f);
 
 
 
-		*/
 
 		//name of Page Field for specifying row + column parent pages whose children will constitute matrix-rows and columns respectively
 		//if this field is NOT empty (used), it overrides the above two selector fields
@@ -158,7 +161,7 @@ class FieldtypeMatrix extends FieldtypeMulti {
 		$f->attr('value', $field->parentRowColumnFieldName);
 		$f->attr('size', 50);
 		$f->label = $this->_('Matrix Row and Column Parent Pages');
-		$f->description = $this->_('Enter the name of a Page Field. This overrides the above two selectors. It allows you to reuse this matrix field in several pages using various combinations of row and column pages.');
+		$f->description = $this->_('Enter the name of a Page Field. This overrides the above two selectors and any custom PHP code. It allows you to reuse this matrix field in several pages using various combinations of row and column pages.');
 		$f->notes = $this->_('This has to be a Multiplepages Field. The first selected page in the specified Page Field will refer to the parent pages for matrix rows and the second for matrix columns. Any other pages added will be ingored. From a usability point of view, it is probably best to use an AsmSelect Page Field.');
 		
 		$inputfields->append($f);
@@ -275,9 +278,13 @@ class FieldtypeMatrix extends FieldtypeMulti {
 			
 			$m = new Matrix();
 
-			$m->row = $v['data']; //note we are converting 'data' to 'matrix->row'
-			$m->column = $v['matrix_column'];
+			#$m->row = wire('pages')->get((int) $v['data'])->title; //note we are converting 'data' to 'matrix->row'
+			#$m->column = wire('pages')->get((int) $v['matrix_column'])->title;
+			$m->row = (int) $v['data']; //note we are converting 'data' to 'matrix->row'
+			$m->column = (int) $v['matrix_column'];
 			$m->value = $v['matrix_value'];
+			#$m->rowID = $v['data'];
+			#$m->columnID = $v['matrix_column'];
 			
 			$m->setTrackChanges(true);//track changes for individual matrix
 			$matrices->add($m);//add to matrices
@@ -318,7 +325,16 @@ class FieldtypeMatrix extends FieldtypeMulti {
 					'matrix_column' => (int) $m->column,
 					'matrix_value' => $m->value,
 					
-				); 
+				);
+
+				#$this->message($m->rowID);
+
+				/*$sleepValue[] = array(
+					'data' => (int) $m->rowID, //note: matrix->row is becoming data which is a required column in a Fieldtype
+					'matrix_column' => (int) $m->columnID,
+					'matrix_value' => $m->value,
+					
+				);*/
 		}//end foreach $value as $m				
 	
 		return $sleepValue;
@@ -390,13 +406,35 @@ class FieldtypeMatrix extends FieldtypeMulti {
 	 */
 	public function getMatchQuery($query, $table, $subfield, $operator, $value) {
 
+
 		//If searching 'row' then assume our default (data) field 
 		#if($subfield == 'matrix_row') $subfield = 'data';
-		if($subfield == 'row') $subfield = 'data';//If searching 'row' then assume our default (data) field 
-		if($subfield == 'column') $subfield = 'matrix_column';//If searching 'column' then assume matrix_column
+		if($subfield == 'row') {
+			$subfield = 'data';//If searching 'row' then assume our default (data) field
+			//if we got a row=selection string, we assume it is a title
+			if(!ctype_digit("$value") && strlen($value)) {
+				//first get the page by name, then grab their ID
+				$r = wire('pages')->get('name=' . $this->sanitizer->pageName($value));
+				if($r and $r->id > 0) $value = $r->id;
+			}
+
+		}
+		
+		if($subfield == 'column') {
+			$subfield = 'matrix_column';//If searching 'column' then assume matrix_column
+			//if we got a column=selection string, we assume it is a title
+			if(!ctype_digit("$value") && strlen($value)) {
+				//first get the page by name, then grab their ID
+				$r = wire('pages')->get('name=' . $this->sanitizer->pageName($value));
+				if($r and $r->id > 0) $value = $r->id;
+			}
+
+		} 
+		
 		if($subfield == 'value') $subfield = 'matrix_value';//If searching 'value' then assume matrix_value
 
 		return parent::getMatchQuery($query, $table, $subfield, $operator, $value); 
+	
 	}
 
 
