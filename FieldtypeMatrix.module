@@ -413,7 +413,7 @@ class FieldtypeMatrix extends FieldtypeMulti {
 
 		} 
 		
-		if($subfield == 'values') $subfield = 'matrix_value';//If searching 'value' then assume matrix_value
+		if($subfield == 'value') $subfield = 'matrix_value';//If searching 'value' then assume matrix_value
 
 		return parent::getMatchQuery($query, $table, $subfield, $operator, $value); 
 	
