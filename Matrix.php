@@ -24,6 +24,8 @@ class Matrix extends WireData {
 		$this->set('row', '');
 		$this->set('column', '');
 		$this->set('value', '');
+		$this->set('rowLabel', '');
+		$this->set('columnLabel', '');
 
 	}
 
@@ -40,7 +42,7 @@ class Matrix extends WireData {
 		//sanitize values as integers
 		elseif($key == 'row' || $key == 'column') $value = (int) $value; 
 		//regular text sanitizer
-		elseif($key == 'value') $value = $this->sanitizer->text($value); 
+		elseif($key == 'value' || $key == 'rowLabel' || $key == 'columnLabel') $value = $this->sanitizer->text($value); 
 
 		return parent::set($key, $value);//back to WireData
 	}
@@ -57,13 +59,9 @@ class Matrix extends WireData {
 		if($this->page && $this->page->of()) {
 
 			//for rows and columns show user friendly output (titles rather than IDs)
-			if($key == 'row' || $key == 'column') {					
-				$p = wire('pages')->get((int)$value);
-				if($p && $p->id > 0) $value = $p->title;
-			}			
-			//regular text sanitizer for our values
-			elseif($key == 'value') $value = $this->sanitizer->text($value);
-
+			if($key == 'row' || $key == 'column') $value = (int) $value;			
+			//regular text sanitizer for our values + row + column headers
+			elseif($key == 'value' || $key == 'rowLabel' || $key == 'columnLabel') $value = $this->sanitizer->text($value);
 		}
 
 		return $value; 
@@ -83,8 +81,8 @@ class Matrix extends WireData {
 		//turn on output formatting for our rendering (if it's not already on)
 		if(!$of) $this->page->of(true);
 
-		$out = "<p>" . 	$this->row . "<br>" .
-						$this->column . "<br>
+		$out = "<p>" . 	$this->rowLabel . "<br>" .
+						$this->columnLabel . "<br>
 						<em>$this->value</em><br>					
 		</p>";	
 		
