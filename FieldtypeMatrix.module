@@ -126,17 +126,12 @@ class FieldtypeMatrix extends FieldtypeMulti {
 		
 		$inputfields->append($f);
 
-		
-
-		#@@todo -> addition for custom php code to return rows and columns (independently)
-
-
 		//input for custom php code or for finding 'row' pages
 		$f = $this->modules->get("InputfieldTextarea");
 		$f->attr('name', 'rowFindPagesCode');
 		$f->attr('value', $field->rowFindPagesCode);
 		$f->label = $this->_('Matrix Row Pages Custom PHP Code');
-		$f->description = $this->_('Enter valid PHP code to find pages for the matrix rows. This statement has access to the $page and $pages API variables, where $page refers to the page being edited. The snippet should only return a Page or PageArray. If it returns a Page, children of that Page are used as row pages. This overrides the above row selector.');//@@todo - amend
+		$f->description = $this->_('Enter valid PHP code to find pages for the matrix rows. This statement has access to the $page and $pages API variables, where $page refers to the page being edited. The snippet should only return a Page or PageArray. If it returns a Page, children of that Page are used as row pages. This overrides the above row selector.');
 		$f->notes = $this->_('Example: return $page->childrent("limit=10"); OR return $pages->get(1234);');
 		
 		$inputfields->append($f);
@@ -146,13 +141,10 @@ class FieldtypeMatrix extends FieldtypeMulti {
 		$f->attr('name', 'columnFindPagesCode');
 		$f->attr('value', $field->columnFindPagesCode);
 		$f->label = $this->_('Matrix Column Pages Custom PHP Code');
-		$f->description = $this->_('Enter valid PHP code to find pages for the matrix columns. This statement has access to the $page and $pages API variables, where $page refers to the page being edited. The snippet should only return a Page or PageArray. If it returns a Page, children of that Page are used as column pages. This overrides the above column selector.');//@@todo - amend
+		$f->description = $this->_('Enter valid PHP code to find pages for the matrix columns. This statement has access to the $page and $pages API variables, where $page refers to the page being edited. The snippet should only return a Page or PageArray. If it returns a Page, children of that Page are used as column pages. This overrides the above column selector.');
 		$f->notes = $this->_('Example: return $page->childrent("limit=10"); OR return $pages->get(5678);');
 		
 		$inputfields->append($f);
-
-
-
 
 		//name of Page Field for specifying row + column parent pages whose children will constitute matrix-rows and columns respectively
 		//if this field is NOT empty (used), it overrides the above two selector fields
@@ -278,13 +270,11 @@ class FieldtypeMatrix extends FieldtypeMulti {
 			
 			$m = new Matrix();
 
-			#$m->row = wire('pages')->get((int) $v['data'])->title; //note we are converting 'data' to 'matrix->row'
-			#$m->column = wire('pages')->get((int) $v['matrix_column'])->title;
 			$m->row = (int) $v['data']; //note we are converting 'data' to 'matrix->row'
 			$m->column = (int) $v['matrix_column'];
 			$m->value = $v['matrix_value'];
-			#$m->rowID = $v['data'];
-			#$m->columnID = $v['matrix_column'];
+			$m->rowLabel = wire('pages')->get((int) $v['data'])->title;//user-friendly row header
+			$m->columnLabel = wire('pages')->get((int) $v['matrix_column'])->title;//user-friendly column header
 			
 			$m->setTrackChanges(true);//track changes for individual matrix
 			$matrices->add($m);//add to matrices
@@ -326,15 +316,7 @@ class FieldtypeMatrix extends FieldtypeMulti {
 					'matrix_value' => $m->value,
 					
 				);
-
-				#$this->message($m->rowID);
-
-				/*$sleepValue[] = array(
-					'data' => (int) $m->rowID, //note: matrix->row is becoming data which is a required column in a Fieldtype
-					'matrix_column' => (int) $m->columnID,
-					'matrix_value' => $m->value,
-					
-				);*/
+				
 		}//end foreach $value as $m				
 	
 		return $sleepValue;
