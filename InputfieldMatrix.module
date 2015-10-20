@@ -46,16 +46,17 @@ class InputfieldMatrix extends Inputfield {
 		$this->field = $field;
 	}
 
-
-	/** @@todo - sort out phpdocs info
-	* Find row and column pages using a specified page field.
+	/** 
+	* Find row pages using a specified page field.
 	*
 	* The children of the respective pages in the page field will be returned as row+column labels/headers.
 	* The first page in the page field = rows headers.
 	* The second page in the page field = columns headers.
 	* 
 	* @access private
-	* @param $name String Name of a page field that will contain pages whose children will be returned as row+column labels/headers.
+	* @param $rowsParent String Name of a page field that will contain pages whose children will be returned as row+column labels/headers.
+	* @return $rows PageArray Child pages of the specified parent page that will make up the row headers.
+	*
 	*/
 	private function matrixRows($rowsParent) {
 
@@ -73,15 +74,17 @@ class InputfieldMatrix extends Inputfield {
 
 	}
 
-	/** @@todo - sort out phpdocs info
-	* Find row and column pages using a specified page field.
+	/** 
+	* Find column pages using a specified page field.
 	*
 	* The children of the respective pages in the page field will be returned as row+column labels/headers.
 	* The first page in the page field = rows headers.
 	* The second page in the page field = columns headers.
 	* 
 	* @access private
-	* @param $name String Name of a page field that will contain pages whose children will be returned as row+column labels/headers.
+	* @param $columnsParent String Name of a page field that will contain pages whose children will be returned as row+column labels/headers.
+	* @return $columns PageArray Child pages of the specified parent page that will make up the column headers.
+	*
 	*/
 	private function matrixColumns($columnsParent) {
 
@@ -108,6 +111,8 @@ class InputfieldMatrix extends Inputfield {
 	* 
 	* @access private
 	* @param $axis String Name of a page field that will contain pages whose children will be returned as row+column labels/headers.
+	* @return eval() of type Page or PageArray or null.
+	*
 	*/
 	private function findPagesCode($axis) {
 
@@ -121,33 +126,19 @@ class InputfieldMatrix extends Inputfield {
 		if($axis == 'row') $findPages = eval($this->rowFindPagesCode);
 		elseif($axis == 'column') $findPages = eval($this->columnFindPagesCode);
 
-		//@@TODO - TRYING TO AVOID EVAL ERORS, E.G. MALFORMED PHP CODE
-		//trigger exception in a "try" block
-		/*try{
-		 if($axis == 'row') $findPages = eval($this->rowFindPagesCode);
-		elseif($axis == 'column') $findPages = eval($this->columnFindPagesCode);
-		//If the exception is thrown, this text will not be shown
-		echo 'If you see this, the number is 1 or below';
-		}
-
-		//catch exception
-		catch(Exception $e){
-		echo 'Message: ' .$e->getMessage();
-		}*/
-
-
-
 		//if eval() returns anything other than a Page or PageArray, return null (error will be returned later in mergeMatrix())
-		if($findPages instanceof Page ) return $findPages->children;//@@todo; limit children? @@tod - will check if children found in mergeMatrix
+		if($findPages instanceof Page ) return $findPages->children;//@@note: will check if children found in mergeMatrix()
 		elseif($findPages instanceof PageArray ) return $findPages;
 		else return null;
 
 	}
 
 	/**
-	 * Build an array for outputting a Matrix Table/Grid
-	 *
-	 */
+	* Build an array for outputting a Matrix Table/Grid.
+	*
+	* @return Array mergedMatrix Array of matrix row/column/values.
+	*
+	*/
 	public function mergeMatrix() {
 
 		//prepare some variables
@@ -199,10 +190,6 @@ class InputfieldMatrix extends Inputfield {
 		//if Page Field NOT specified, we use specified row/column selectors instead
 		else {
 
-				//@@TODO - AS PER ADRIAN'S REQUEST, WILL ADD HERE ABILITY TO RETURN (INDIPENDENTLY FOR ROWS AND COLUMNS) PAGES USING CUSTOM PHP CODE (SIMILAR TO PAGE FIELDS; JUST COPY RYAN'S CODE :-))
-				//@@TODO - IF THE CODE BELOW IS TOO LONG; THEN JUST THROW TO FUNCTIONS, I.E. ONE FOR $rows and the other for $columns
-				//@@TODO - ALSO, ALLOW MIX AND MATCH, I.E. COLUMN PAGES CAN BE FOUND USING CUSTOM PHP CODE AND ROWS USING SELECTOR
-
 				//find all matrix-row pages
 				if($rowFindPagesCode) {
 					$rows = $this->findPagesCode('row');
@@ -231,11 +218,7 @@ class InputfieldMatrix extends Inputfield {
 
 
 		}//end else we use row/column selectors
-
 		
-		//@@TODO - MOVE ABOVE TO OWN FUNCTION(S)
-
-
 		//create our default matrix with blank values (i.e. blank matrix->value)
 		//we later merge this with saved values in the db
 		//this will help us detect if new row/column pages have been added
@@ -274,8 +257,7 @@ class InputfieldMatrix extends Inputfield {
 				//if(!$rp || $rp->is('unpublished') || $rp->is('hidden')) continue;//syntax will only work in PW 2.5+ ?
 
 				//build the saved values array
-				#$dbMatrix[$m->row][$m->column] = $m->value;//
-				$dbMatrix[$m->row][$m->column] = $this->sanitizer->entities($m->value);//@@todo - need to sanitize this values for display?
+				$dbMatrix[$m->row][$m->column] = $this->sanitizer->entities($m->value);
 
 				//get the column page
 				$cp = $pages->get($m->column);
@@ -547,8 +529,8 @@ class InputfieldMatrix extends Inputfield {
 							//create a new matrix and add it to our matrices
 							$m = new Matrix();
 
-							$m->row = (int) $row;//@@todo - don't really need to sanitize here as well since done in Matrix::set() too?
-							$m->column = (int) $column;//@@todo - ditto
+							$m->row = (int) $row;//@@note - don't really need to sanitize here as well since done in Matrix::set() 
+							$m->column = (int) $column;//@@note - ditto
 							$m->value = $value;
 
 							$matrices->add($m);//add matrix to MatrixArray
@@ -579,6 +561,7 @@ class InputfieldMatrix extends Inputfield {
 	/**
 	 * Prepare copy-pasted CSV matrix values for processing
 	 * These will either be processed using MatrixArray/Matrix or MySQL LOAD DATA INFILE
+	 *
 	 */
 	public function prepareCSV($csvRawData, $csvDelimiter, $csvEnclosure) {
 
@@ -879,6 +862,7 @@ class InputfieldMatrix extends Inputfield {
 	 * If detection fails, at least values are parsed without ??
 	 *
 	 * @author aaron@aarongough.com - php.net
+	 *
 	 */
 	public function charEncode ($source, $targetEncoding) {
 		
