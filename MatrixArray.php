@@ -50,6 +50,7 @@ class MatrixArray extends WireArray {
 		$rowSel = '';
 		$this->fn = FieldtypeMatrix::$name;//name of the field to query
 
+		//if we got an integer, we assume it is the ID
 		if(is_int($sv)) $rowSel = $type . "=" . $sv;
 		//if we got a path
 		elseif (preg_match('#^(\/)#', $sv)) {
@@ -122,6 +123,29 @@ class MatrixArray extends WireArray {
 		$values = wire('page')->$n->find("$colSel, limit=$limit, sort=$sort");
 
 		return $values;
+
+	}
+
+	/**
+	* Return a single value at the given coordinates (row, column).
+	*
+	* @access public
+	* @param Page|string|int|path $r The row whose value to return.
+	* @param Page|string|int|path $c The column whose value to return.
+	* @return Object|Bool False $value Retrieved result. 
+	*
+	*/
+	public function getValue($r, $c) {
+
+		//@@todo: update to work with $pages->get?
+
+		$rowSel = $this->getValidgetRC($r, 'row');
+		$colSel = $this->getValidgetRC($c, 'column');
+		$n = $this->fn;//name of the field to search through
+
+		$value = wire('page')->$n->get("$rowSel, $colSel");
+
+		return $value;
 
 	}
 
