@@ -625,7 +625,7 @@ class InputfieldMatrix extends Inputfield {
 		$extraTH = $rowNumber ? '<th></th>' : '';
 
 		//to check if saving blank values allowed (yes=1; no=2)
-		$saveBlankValuesNote = $this->allowBlankValues == 1 ? $this->_('Note: Blank values will be saved.') : $this->_('Note: Blank values will not be saved.');
+		$saveBlankValuesNote = $this->allowBlankValues == 1 ? $this->_('Note: Empty values will be saved.') : $this->_('Note: Empty values will not be saved.');
 		$saveBlankValuesNote = '<span class="notes">' . $saveBlankValuesNote . '</span>';
 
 		//final matrix table for output
@@ -648,6 +648,7 @@ class InputfieldMatrix extends Inputfield {
 					</table>					
 					$exportDataButton
 					$clearAllButton
+					$saveBlankValuesNote
 		";
 
 		return $matrixTable;
