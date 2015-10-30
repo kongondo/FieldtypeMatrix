@@ -26,7 +26,7 @@ class InputfieldMatrix extends Inputfield {
 		return array(
 			'title' => 'Matrix',
 			'author' => 'Francis Otieno (Kongondo)',
-			'version' => 102,
+			'version' => 103,
 			'href' => 'https://processwire.com/talk/topic/8581-module-matrix-fieldtype-inputfield/',
 			'summary' => 'Matrix: Inputfield for a 2D-matrix.',
 			'requires' => 'FieldtypeMatrix', 
@@ -54,8 +54,8 @@ class InputfieldMatrix extends Inputfield {
 	* The second page in the page field = columns headers.
 	* 
 	* @access private
-	* @param $rowsParent String Name of a page field that will contain pages whose children will be returned as row+column labels/headers.
-	* @return $rows PageArray Child pages of the specified parent page that will make up the row headers.
+	* @param String $rowsParent Name of a page field that will contain pages whose children will be returned as row+column labels/headers.
+	* @return PageArray $rows Child pages of the specified parent page that will make up the row headers.
 	*
 	*/
 	private function matrixRows($rowsParent) {
@@ -66,7 +66,6 @@ class InputfieldMatrix extends Inputfield {
 		//if $rowsParent does not have children set error message
 		if(!$rowsParent->numChildren) return $this->_('The specified matrix rows parent does not have children. You need to first create its child pages.');
 
-		##### -if we made it here, we are good to go ####
 		//find all matrix-row pages
 		$rows = $rowsParent->children;
 
@@ -82,8 +81,8 @@ class InputfieldMatrix extends Inputfield {
 	* The second page in the page field = columns headers.
 	* 
 	* @access private
-	* @param $columnsParent String Name of a page field that will contain pages whose children will be returned as row+column labels/headers.
-	* @return $columns PageArray Child pages of the specified parent page that will make up the column headers.
+	* @param String $columnsParent Name of a page field that will contain pages whose children will be returned as row+column labels/headers.
+	* @return PageArray $columns Child pages of the specified parent page that will make up the column headers.
 	*
 	*/
 	private function matrixColumns($columnsParent) {
@@ -94,7 +93,6 @@ class InputfieldMatrix extends Inputfield {
 		//if $columnsParent does not have children set error message
 		if(!$columnsParent->numChildren) return $this->_('The specified matrix column parent does not have children. You need to first create its child pages.');
 		
-		##### -if we made it here, we are good to go ####
 		//find all matrix-column pages
 		$columns = $columnsParent->children;
 
@@ -110,7 +108,7 @@ class InputfieldMatrix extends Inputfield {
 	* The second page in the page field = columns headers.
 	* 
 	* @access private
-	* @param $axis String Name of a page field that will contain pages whose children will be returned as row+column labels/headers.
+	* @param String $axis Name of a page field that will contain pages whose children will be returned as row+column labels/headers.
 	* @return eval() of type Page or PageArray or null.
 	*
 	*/
@@ -133,142 +131,333 @@ class InputfieldMatrix extends Inputfield {
 
 	}
 
-	/**
-	* Build an array for outputting a Matrix Table/Grid.
+	/** 
+	* Build Inputfields for importing matrix values.
 	*
-	* @return Array mergedMatrix Array of matrix row/column/values.
+	* @access private
+	* @return Inputfields $inputfields Inputfields for importing/copy pasting csv values.
 	*
 	*/
-	public function mergeMatrix() {
+	private function buildImportExportForm() {
 
-		//prepare some variables
-		$values = $this->attr('value');
-		$pages = wire('pages');
+		//import CSV data options
+		$inputfields = new InputfieldWrapper();
+
+		$fieldset = $this->modules->get('InputfieldFieldset');
+		$fieldset->attr('id', 'matrix_' . $this->field->name . 'csv_import_export'); 
+		$fieldset->label = $this->_('Import/Export CSV Data');
+		$fieldset->description = $this->_('If you prefer, you may import a CSV file or copy-paste CSV data here rather than manually entering values in your matrix table above. You can also export saved matrix values to a CSV file.');
+		$fieldset->collapsed = Inputfield::collapsedYes;
+
+		//import csv/txt file
+		$f = $this->modules->get("InputfieldMarkup");
+		$f->label = $this->_('Import from CSV File');
+		$f->value = "<input name='matrix_" . $this->field->name . "_csvfile' type='file' />";
+		$f->description = 
+			 $this->_("UTF-8 compatible encoding is assumed. The file must have the extension '.csv' or '.txt'. You can also copy-paste in CSV data in the 'Import by copying and pasting CSV data' section below. You may do one or the other, but not both simultaneously. If you did both, copy-pasted values would be disregarded. If your CSV data is not comma-delimeted, specify your delimiter below before proceeding.");
+		$f->notes = $this->_("1. If you wish to import values for your whole matrix table, be sure that the number of rows and columns in your CSV data exactly match the matrix table above.") . "\n". 
+			$this->_("2. Any extra rows/columns will be discarded.") . "\n". 
+			$this->_("3. However, your CSV data can also have less rows/columns or some missing values.") . "\n". 
+			$this->_("4. After saving, you will be able to manually input missing values and/or correct mistakes.") . "\n". 
+			$this->_("5. The CSV Data must not contain a column/header row, i.e. the first row in your CSV values will be saved as data.") . "\n". 
+			$this->_("6. Click the 'Save' Button once you have uploaded your file to start the import process.");
+
+		$fieldset->add($f);
+
+		//csv paste
+		$f = $this->modules->get('InputfieldTextarea');
+		$f->name = 'matrix_' . $this->field->name . '_csvpasted';
+		$f->label = $this->_('Import by copying and pasting CSV data');
+		$f->description = $this->_('Values entered here overwrite those in the matrix table!');
+		$f->notes = $this->_("The notes outlined above in 'CSV File' are applicable here.");
+		$f->collapsed = Inputfield::collapsedYes;
+
+		$fieldset->add($f);
+
+		//csv delimeter
+		$f = $this->modules->get('InputfieldText');
+		$f->name = 'matrix_' . $this->field->name . '_csv_column_separator';
+		$f->label = $this->_('Columns delimited by');
+		$f->notes = $this->_('For tab-separated, enter: tab.');
+		$f->value = ',';
+		
+		$fieldset->add($f);
+
+		//csv enclosure
+		$f = $this->modules->get('InputfieldText');
+		$f->name = 'matrix_' . $this->field->name . '_csv_column_enclosure';
+		$f->label = $this->_('Column enclosure');
+		$f->notes = $this->_('When a value contains a delimeter, it must be enclosed by a character (typically a double quote character). If you are not sure what should go here, it is recommended you leave it at the default (").');
+		$f->value = '"';
+		if($f->value == '"') $f->collapsed = Inputfield::collapsedYes;
+		$f->attr('maxlength', 1);
+		$f->attr('size', 1);
+
+		$fieldset->add($f);
+
+
+		########## - EXPORT INFO - ############
+
+		//export to csv
+		$f = $this->modules->get("InputfieldMarkup");
+		$f->label = $this->_('Export to CSV File');
+		$f->description = 
+			 $this->_("You can export saved matrix values to a CSV file that you can edit on your computer and optionally re-import into this matrix.");
+		$f->notes = $this->_("1. If you will re-import the CSV file into this matrix, the above rules of importation apply.") . "\n". 
+			$this->_("2. The columns delimiter and enclosure set above will be used in generating the CSV file.") . "\n". 
+			$this->_("3. For convenience, row labels will be included (as the first column) in the CSV file. You need to remove these if re-importing the CSV file") . "\n" .
+			$this->_("4. The exported CSV file will be named using the format 'pagename_matrixname_currenttime.csv'.") . "\n". 
+			$this->_("5. Click an 'Export Data' Button to start the export process.");
+
+		$fieldset->add($f);
+
+		//start export from
+		$f = $this->modules->get('InputfieldText');
+		$f->name = 'matrix_' . $this->field->name . '_csv_export_from';
+		$f->label = $this->_('Export from Row Number');
+		$f->notes = $this->_('Optionally specify a row number from which the export will start. Leave blank if you want to export from the first row.');
+		$f->value = '';
+		$f->attr('maxlength', 50);
+		$f->attr('size', 10);
+
+		$fieldset->add($f);
+
+		//export until
+		$f = $this->modules->get('InputfieldText');
+		$f->name = 'matrix_' . $this->field->name . '_csv_export_till';
+		$f->label = $this->_('Export up to Row Number');
+		$f->notes = $this->_('Optionally specify a row number at which to stop exporting (inclusive). Leave blank to export until the last row.');
+		$f->value = '';
+		$f->attr('maxlength', 50);
+		$f->attr('size', 10);
+
+		$fieldset->add($f);
+
+		//export button (within fieldset)
+
+		//for special CSS class if user using AdminThemeReno
+		$extraCSSClass = $this->adminTheme == 'AdminThemeReno' ? 'Reno' : '';
+
+		$f = $this->modules->get('InputfieldSubmit');
+		$f->attr('name', 'matrix_' . $this->field->name . '_export');//
+		$f->class .= ' MatrixExport' . $extraCSSClass;
+		$f->attr('value', $this->_('Export Data'));
+
+		$fieldset->add($f);
+		
+		$inputfields->add($fieldset);
+
+		return $inputfields;
+
+	}
+
+	/**
+	* Find the pages to build the rows and columns labels for the Matrix Table/Grid.
+	*
+	* @return Array $rc Array with Row and Column PageArrays as values.
+	*
+	*/
+	private function findRowsColumns() {
+
+		$rc = array();
+		$error = '';
+
+		$pages = $this->wire('pages');
 		$page = $this->page;
 		$rowsParent = '';
 		$columnsParent = '';
 		
-		$parentRowColumnSelector = $this->parentRowColumnFieldName;//this property was set in FieldtypeMatrix getInputfield()
-		$rowSelector = $this->rowSelector;//ditto
-		$columnSelector = $this->columnSelector;//ditto		
+		$parentRowColumnPageField = $this->parentRowColumnFieldName;//this property was set in FieldtypeMatrix getInputfield()
 		$rowFindPagesCode = $this->rowFindPagesCode;//ditto
 		$columnFindPagesCode = $this->columnFindPagesCode;//ditto
+		$rowSelector = $this->rowSelector;//ditto
+		$columnSelector = $this->columnSelector;//ditto
 
 		$editURL = $this->wire('config')->urls->admin . 'setup/field/edit?id=' . $this->field->id;
 		
 		### first we deal with errors. We'll return these as strings to output in $this->error() in render() ###
 
 		//in neither a Page Field nor selectors for finding pages to build matrix rows/columns specified set error message
-		if((!$parentRowColumnSelector) && (!$rowFindPagesCode || !$columnFindPagesCode) && (!$rowSelector || !$columnSelector))
-				return '<a href="' . $editURL .'">' . 	$this->_('Check the Details Tab of the field') . '</a> ' . $this->field->name . 
+		if((!$parentRowColumnPageField) && (!$rowFindPagesCode || !$columnFindPagesCode) && (!$rowSelector || !$columnSelector))
+				$error = '<a href="' . $editURL .'">' . 	$this->_('Check the Details Tab of the field') . '</a> ' . $this->field->name . 
 														$this->_('. You need to either use selectors or a Page Field to find pages to show in your matrix table.');
 
 		//if Page Field specified, we use that to find the children pages of the specified row and column parent pages respectively
-		if($parentRowColumnSelector) {
-
-				//parents
-				$rowsParent = $page->$parentRowColumnSelector->first();//the first selected page is treated as the row pages parent
-				$columnsParent = $page->$parentRowColumnSelector->getNext($rowsParent);//the second selected page is treated as the column pages parent
+		if($parentRowColumnPageField) {
 
 				//if the page field does not return a PageArray, set error message	
-				if(!$page->$parentRowColumnSelector instanceof PageArray)
-					return '<a href="' . $editURL .'">' . 	$this->_('Check the Details Tab of the field') . '</a> ' . $this->field->name . 
-															$this->_('. Only a Page Field can be used to specify the rows and columns parent pages for building your matrix! Confirm that you specified a Multiplepage Field.');
+				if(!$page->$parentRowColumnPageField instanceof PageArray) 
+					$error = '<a href="' . $editURL .'">' . 	$this->_('Check the Details Tab of the field') . '</a> ' . $this->field->name . 
+															$this->_('. Only a Multiple Page Field can be used to specify the rows and columns parent pages for building your matrix! Confirm that you specified a Multiple Page Field.');
 
 				//if less than 2 matrix parent pages selected (we need one for rows and the other for columns) set error message
-				if(count($page->$parentRowColumnSelector) < 2) return $this->_('You need to select 1 matrix rows parent and 1 matrix columns parent.');
+				elseif(count($page->$parentRowColumnPageField) < 2) $error = $this->_('You need to select 1 matrix rows parent and 1 matrix columns parent.');
 
-				##### -if we made it here, we are good to go ####
-				//find all matrix-row pages
-				$rows = $this->matrixRows($rowsParent);
+				//parents
+				elseif(count($page->$parentRowColumnPageField)) {
+						$rowsParent = $page->$parentRowColumnPageField->first();//the first selected page is treated as the row pages parent
+						$columnsParent = $page->$parentRowColumnPageField->getNext($rowsParent);//the second selected page is treated as the column pages parent
+						
+						//find all matrix-row pages						
+						if(is_string($this->matrixRows($rowsParent))) $error = $this->matrixRows($rowsParent);
+						##### -if we made it here, we are good to go with rows ####
+						elseif($this->matrixRows($rowsParent) instanceof PageArray) $rows = $this->matrixRows($rowsParent);
 
-				//find all matrix-column pages
-				$columns = $this->matrixColumns($columnsParent);
+						//find all matrix-column pages
+						if(is_string($this->matrixColumns($columnsParent))) $error = $this->matrixColumns($columnsParent);
+						##### -if we made it here, we are good to go with columns ####
+						elseif($this->matrixColumns($columnsParent) instanceof PageArray) $columns = $this->matrixRows($columnsParent);
+				}
+
+
 	
 		}//end if a Page Field was specified
 
-		//if Page Field NOT specified, we use specified row/column selectors instead
+		//if Page Field NOT specified, we use specified row/column custom PHP code OR selectors instead
 		else {
 
 				//find all matrix-row pages
 				if($rowFindPagesCode) {
 					$rows = $this->findPagesCode('row');
-					if (!count($rows)) return $this->_('Only Page or PageArray should be returned by your custom code! Check that your code is valid.');
+					if (!count($rows)) 
+						$error = $this->_('Only Page or PageArray should be returned by your custom code!') . 
+						' <a href="' . $editURL .'">' . 	$this->_(' Check that your \'Matrix Row code\' is valid') . '</a>.';
 				}
 				elseif($rowSelector) {
 					$rows = $pages->find($rowSelector);//ProcessWire will throw an exception here if the selector is not valid
 					//if row/column selectors return empty set error message
 					if(!count($rows)) 
-						return 	$this->_('No row pages found with the selector set in \'Row Matrix pages\' for the field ') . $this->field->name . 
+						$error =	$this->_('No row pages found with the selector set in \'Matrix Row pages\' for the field ') . $this->field->name . 
 							'. <a href="' . $editURL .'">' . 	$this->_('Amend your selector') . '</a>.';
 				}
 
 				//find all matrix-column pages
-				#$columns = $pages->find($columnSelector);//ProcessWire will throw an exception here if the selector is not valid
 				if($columnFindPagesCode) {
 					$columns = $this->findPagesCode('column');
-					if (!count($columns)) return $this->_('Only Page or PageArray should be returned by your custom code! Check that your code is valid.');
+					if (!count($columns)) 
+						$error = $this->_('Only Page or PageArray should be returned by your custom code!') . 
+						' <a href="' . $editURL .'">' . 	$this->_(' Check that your \'Matrix Column code\' is valid') . '</a>.';
 				}
 				elseif($columnSelector) {
 					$columns = $pages->find($columnSelector);//ProcessWire will throw an exception here if the selector is not valid
 					if(!count($columns)) 
-						return 	$this->_('No column pages found with the selector set in \'Column Matrix pages\' for the field ') . $this->field->name . 
+						$error = 	$this->_('No column pages found with the selector set in \'Matrix Column pages\' for the field ') . $this->field->name . 
 							'. <a href="' . $editURL .'">' . 	$this->_('Amend your selector') . '</a>.';
 				}
 
-
 		}//end else we use row/column selectors
+
+		//if we $error is populated, it means errors were found. We return the 'error' strings for later feedback to user
+		if(strlen($error)) return $error;
+
+		$rc['rows'] = $rows;//PageArray
+		$rc['columns'] = $columns;//PageArray
+		$rc['rows_parent'] = $rowsParent;//Page|Empty string
+		$rc['columns_parent'] = $columnsParent;//Page|Empty string
+
+		return $rc;
+
+	}
+
+	/**
+	* Build the default matrix with blank values (blank matrix->value).
+	*
+	* We later merge this with saved values from the db.
+	* This will help us detect if new row/column pages have been added.
+	*
+	* @access private
+	* @param PageArray $rows Pages to return as matrix rows.
+	* @param PageArray $columns Pages to return as matrix columns.
+	* @param String $type Page property to save to the returned array.
+	* @return Array $defaultMatrix Array with Row and Column matrix/grid with blank values.
+	*
+	*/
+	private function buildDefaultMatrix($rows, $columns, $type = 'id') {
 		
-		//create our default matrix with blank values (i.e. blank matrix->value)
-		//we later merge this with saved values in the db
-		//this will help us detect if new row/column pages have been added
 		$defaultMatrix = array();
-
-		//get the rows and columns to build our empty-values default matrix
+		//create our rows - top level array
 		foreach($rows as $row) {
-
-					//create our rows - top level array
-					#$defaultMatrix[$row->id] = '';//no need for this here
-
-					//create our columns - 2nd level array WITH empty values
-					foreach($columns as $column) {
-								
-								$defaultMatrix[$row->id][$column->id] = '';//value = blank
-					}
-
+			//create our columns - 2nd level array WITH empty values
+			foreach($columns as $column) $defaultMatrix[$row->$type][$column->$type] = '';//value = blank
 		}
 
-		//get our saved db matrix values
+		return $defaultMatrix;
+
+	}
+
+	/**
+	* Build an array for outputting a Matrix Table/Grid.
+	*
+	* @return Array $mergedMatrix Array of matrix row/column/values.
+	*
+	*/
+	public function mergeMatrix() {
+
+		//prepare some variables
+		$values = $this->attr('value');
+		$pages = $this->wire('pages');
+		$page = $this->page;
+		$rowsParent = '';
+		$columnsParent = '';
+		
+		$parentRowColumnSelector = $this->parentRowColumnFieldName;//this property was set in FieldtypeMatrix getInputfield()
+		$rowFindPagesCode = $this->rowFindPagesCode;//ditto
+		$columnFindPagesCode = $this->columnFindPagesCode;//ditto
+		$rowSelector = $this->rowSelector;//ditto
+		$columnSelector = $this->columnSelector;//ditto
+
+		//rows and columns for this matrix
+		$rc = $this->findRowsColumns();
+
+		//if we didn't get an array back from findRowsColumns() it means errors were found. We output the returned 'error' strings
+		if(!is_array($rc)) {
+			$this->error($rc, Notice::allowMarkup);
+			return;
+		}
+
+		//if we got here, it means no errors found and good to go
+		else {
+			$rows = $rc['rows'];
+			$columns = $rc['columns'];
+			$rowsParent = $rc['rows_parent'];//only if Page Field used to build matrix rows
+			$columnsParent = $rc['columns_parent'];//only if Page Field used to build matrix columns
+
+		}
+		
+		//build default matrix grid with empty-values for later merging with any saved db values
+		$defaultMatrix = $this->buildDefaultMatrix($rows, $columns);
+
+		//get saved db matrix values
 		$dbMatrix = array();//for storing row/column values already saved in db
 
 		//loop through saved db values
 		foreach($values as $m) {
 
-				//get the row page
-				$rp = $pages->get($m->row);
-				
-				//in case the matrix rows parent was changed and is different from the rows parent of the saved db values...
-				//we skip such rows in readiness for deletion
-				//we only do this if a Page Field was used to select matrix rows (difficult if a selector/PHP code was used - no problem since assuming only supersuser can edit selector in Page Field)
-				if($rowsParent && $rp->parent != $rowsParent) continue;
+			//get the row page
+			$rp = $pages->get($m->row);
+			
+			//in case the matrix rows parent was changed and is different from the rows parent of the saved db values...
+			//we skip such rows in readiness for deletion
+			//we only do this if a Page Field was used to select matrix rows (difficult if a selector/PHP code was used - no problem since assuming only supersuser can edit selector in Page Field)
+			if($rowsParent && $rp->parent != $rowsParent) continue;
 
-				//remove matrix-rows that are no longer needed i.e. 'unpublished', 'hidden', 'deleted' or 'trashed'
-				if(!$rp || $rp->is(Page::statusUnpublished) || $rp->isHidden() || $rp->isTrash()) continue;
-				//if(!$rp || $rp->is('unpublished') || $rp->is('hidden')) continue;//syntax will only work in PW 2.5+ ?
+			//remove matrix-rows that are no longer needed i.e. 'unpublished', 'hidden', 'deleted' or 'trashed'
+			if(!$rp || $rp->is(Page::statusUnpublished) || $rp->isHidden() || $rp->isTrash()) continue;
+			//if(!$rp || $rp->is('unpublished') || $rp->is('hidden')) continue;//syntax will only work in PW 2.5+ ?
 
-				//build the saved values array
-				$dbMatrix[$m->row][$m->column] = $this->sanitizer->entities($m->value);
+			//build the saved values array
+			$dbMatrix[$m->row][$m->column] = $this->sanitizer->entities($m->value);
 
-				//get the column page
-				$cp = $pages->get($m->column);
+			//get the column page
+			$cp = $pages->get($m->column);
 
-				//remove matrix-columns that are no longer needed i.e. 'unpublished', 'hidden', 'deleted' or 'trashed'
-				if(!$cp || $cp->is(Page::statusUnpublished) || $cp->isHidden() || $cp->isTrash()) unset($dbMatrix[$m->row][$m->column]);
-				
-				//in case the matrix columns parent was changed and is different from the columns parent of the saved db values...
-				//we remove such columns in readiness for deletion
-				//we only do this if a Page Field was used to select matrix columns (ditto above)
-				if($columnsParent && $cp->parent != $columnsParent) unset($dbMatrix[$m->row][$m->column]);
+			//remove matrix-columns that are no longer needed i.e. 'unpublished', 'hidden', 'deleted' or 'trashed'
+			if(!$cp || $cp->is(Page::statusUnpublished) || $cp->isHidden() || $cp->isTrash()) unset($dbMatrix[$m->row][$m->column]);
+			
+			//in case the matrix columns parent was changed and is different from the columns parent of the saved db values...
+			//we remove such columns in readiness for deletion
+			//we only do this if a Page Field was used to select matrix columns (ditto above)
+			if($columnsParent && $cp->parent != $columnsParent) unset($dbMatrix[$m->row][$m->column]);
 
 		}
 
@@ -290,6 +479,9 @@ class InputfieldMatrix extends Inputfield {
 	public function ___render() {
 
 		//#########	CREATE MATRIX TABLE #########
+				
+		//send js configurations to the browser
+		$this->jsConfigs();
 
 		$mergedMatrix = $this->mergeMatrix();
 
@@ -300,7 +492,36 @@ class InputfieldMatrix extends Inputfield {
 
 		}
 
-		$pages = wire('pages');
+		//get the matrix table's thcols and tbody
+		$tableMarkup = $this->buildMatrixTable($mergedMatrix);
+
+		$thcols = $tableMarkup['thcols'];
+		$tbody = $tableMarkup['tbody'];
+		$rowNumber = $tableMarkup['showRowNumber'];//showing row number?
+
+		//render matrix table/grid
+		$out = $this->renderMatrixTable($thcols, $tbody, $rowNumber);
+
+		//import CSV data options
+		$importMatrixValues = $this->buildImportExportForm()->render();
+
+		return $out . $importMatrixValues;
+	}
+
+	/**
+	* Build the matrix table/grid from an array of matrix rows, columns and values.
+	*
+	* @access private
+	* @param Array $mergedMatrix Array with matrix rows, columns and values.
+	* @return Array $matrixTableMarkup Array with Table Headers and Columns Markup for the matrix table + if to show row numbering.
+	*
+	*/
+	private function buildMatrixTable($mergedMatrix) {
+		
+		$matrixTableMarkup = array();
+
+		$pages = $this->wire('pages');
+		$showRowsNumbering = $this->showRowsNumbering;//this property was set in FieldtypeMatrix getInputfield()
 
 		$tbody ='';//for matrix rows
 		$thcols = '';//for matrix table column headers
@@ -308,7 +529,7 @@ class InputfieldMatrix extends Inputfield {
 		$columnHeaderLabel = $this->columnLabelFieldName;//this property was set in FieldtypeMatrix getInputfield()
 
 		$i = 0;//set counter not to output extraneous column label headers
-		//$j = 1;//counter for rows numbering
+		$j = 1;//counter for rows numbering
 		$count = '';//initialise variable for counting number of columns
 		
 		foreach($mergedMatrix as $row => $cols) {
@@ -321,9 +542,16 @@ class InputfieldMatrix extends Inputfield {
 				$rowLabel = $rh->$rowHeaderLabel ? $rh->$rowHeaderLabel : $rh->title;
 				/*$tbody .= "<tr>
 								<td class=MatrixRowCount>" . $j. "</td>
-	            				<td>" . $rowLabel. "</td>";*///@@left here in case will switch to row counters in the future
+	            				<td>" . $rowLabel. "</td>";
+	            				@@left here in case will switch to row counters in the future
+	            */
 
-				$tbody .= "<tr><td class='MatrixRowHeader'>" . $rowLabel . "</td>";
+	            //if rows numbering allowed
+	            $rowNumber = $showRowsNumbering == 1 ? "<th scope='row' class='MatrixRowNumber'>" . $j . "</th>" : '';
+				
+				$tbody .= "<tr id='{$this->field->name}_{$rh->id}'>"
+							 . $rowNumber .  
+							"<td class='MatrixRowHeader'>" . $rowLabel . "</td>";
 
 				//we count this once only rather than on each 'row' loop!
 				if($i == 0) $count = count($cols);//help to stop output of extra/duplicate column headers
@@ -338,11 +566,8 @@ class InputfieldMatrix extends Inputfield {
 
 							//avoid outputting extra duplicate columns. 
 							if($i < $count) {
-
 									$thcols .= "<th class='MatrixColumnHeader'>" . $columnLabel  . "</th>";
-
 									$i++;//no need to keep incrementing after number of desired columns reached
-
 							}
 
 							//input name will be in the format 'R5282_C5289' to match row and column page IDs respectively
@@ -351,101 +576,114 @@ class InputfieldMatrix extends Inputfield {
 
 				}
 
-				$tbody .= "</tr>";
+				$tbody .= "<td><input type='checkbox' name='row_action[]' value='{$rh->id}' data-row='{$this->field->name}_{$rh->id}' class='MatrixCheckbox'></td></tr>";
 
-				//$j++;
+				$j++;
 		}
+
+		$matrixTableMarkup['thcols'] = $thcols;
+		$matrixTableMarkup['tbody'] = $tbody;
+		$matrixTableMarkup['showRowNumber'] = $showRowsNumbering == 1 ? true : false;
+
+		return $matrixTableMarkup;
+
+	}
+	
+
+	/**
+	* Render the matrix table/grid with populated values.
+	*
+	* @access private
+	* @param String $thcols Table Headers (thcols) Markup for the matrix table/grid.
+	* @param String $tbody Table Body (tbody) Markup for the matrix table/grid.
+	* @param Bool $rowNumber Whether to render extra table header needed if showing row numbers.
+	* @return String $matrixTable Table Markup of matrix table/grid with populated values.
+	*
+	*/
+	private function renderMatrixTable($thcols, $tbody, $rowNumber = false) {
+		
+		//for special CSS class if user using AdminThemeReno
+		$extraCSSClass = $this->adminTheme == 'AdminThemeReno' ? 'Reno' : '';
+
+		$tableID = 'Inputfield_' . $this->field->name;
+
+		//export button
+		$btn = $this->modules->get('InputfieldSubmit');
+		$btn->attr('name', 'matrix_' . $this->field->name . '_export');//
+		$btn->class .= ' MatrixExport' . $extraCSSClass;
+		$btn->attr('value', $this->_('Export Data'));
+		$exportDataButton = $btn->render();
 
 		//button to reset/clear all matrix values before save
 		$btn = $this->modules->get('InputfieldButton');
-		$btn->attr('data-table', $this->field->name);//in case there's more than one matrix table on this page we only want to clear data from the 'one' table
-		$btn->class .= ' InputfieldMatrixReset';
+		$btn->attr('data-table', $tableID);//in case there's more than one matrix table on this page we only want to clear data from the 'one' table
+		$btn->class .= ' MatrixReset' . $extraCSSClass;
 		$btn->attr('value', $this->_('Clear Data'));
 		$clearAllButton = $btn->render();
 
+		//extra column table header if row numbering enabled
+		$extraTH = $rowNumber ? '<th></th>' : '';
+
+		//to check if saving blank values allowed (yes=1; no=2)
+		$saveBlankValuesNote = $this->allowBlankValues == 1 ? $this->_('Note: Blank values will be saved.') : $this->_('Note: Blank values will not be saved.');
+		$saveBlankValuesNote = '<span class="notes">' . $saveBlankValuesNote . '</span>';
+
 		//final matrix table for output
-		$tableID = $this->field->name;
-		$out =   "
+		$matrixTable =   "
+					$saveBlankValuesNote
+					$exportDataButton
 					$clearAllButton
-		 			<table id='$tableID' class='InputfieldMatrix'>
+		 			<table id='$tableID' class='Matrix'>
 						<thead>
 							<tr class=''>
+								$extraTH
 								<th></th>
-									$thcols
+								$thcols
+								<th><input type='checkbox' class='MatrixToggleAll' data-table='$tableID'></th>
 							</tr>
 						</thead>
 						<tbody>
 							$tbody
 						</tbody>
 					</table>					
+					$exportDataButton
 					$clearAllButton
 		";
 
-		//paste CSV data options
-		$inputfields = new InputfieldWrapper();
+		return $matrixTable;
 
-		$fieldset = $this->modules->get('InputfieldFieldset');
-		$fieldset->attr('id', 'csv_import'); 
-		$fieldset->label = $this->_('Upload/Paste CSV Data');
-		$fieldset->description = $this->_('If you prefer, you may upload a CSV file or copy-paste CSV data here rather than manually entering values in your matrix table above.');
-		$fieldset->collapsed = Inputfield::collapsedYes;
-
-		//upload csv/txt file
-		$f = $this->modules->get("InputfieldMarkup");
-		$f->label = $this->_('CSV File');
-		$f->value = "<input name='matrix_" . $this->field->name . "_csvfile' type='file' />";
-		$f->description = 
-			 $this->_("UTF-8 compatible encoding is assumed. The file must have the extension '.csv' or '.txt'. You can also copy-paste in CSV data in the 'Paste in CSV Data' section below. You may do one or the other, but not both simultaneously. If you did both, copy-pasted values would be disregarded. If your CSV data is not comma-delimeted, specify your delimiter below before proceeding.");
-		$f->notes = $this->_("1. If you wish to import values for your whole matrix table, be sure that the number of rows and columns in your CSV data exactly match the matrix table above.\n") . 
-			$this->_("2. Any extra rows/columns will be discarded.\n") . 
-			$this->_("3. However, your CSV data can also have less rows/columns or some missing values.\n") .  
-			$this->_("4. After saving, you will be able to manually input missing values and/or correct mistakes.\n") . 
-			$this->_("5. The CSV Data must not contain a column/header row, i.e. the first row in your CSV values will be saved as data.");
-
-		$fieldset->add($f);
-
-		//csv delimeter
-		$f = $this->modules->get('InputfieldText');
-		$f->name = 'csv_column_separator';
-		$f->label = $this->_('Columns delimited by');
-		$f->notes = $this->_('For tab-separated, enter: tab.');
-		$f->value = ',';
-		
-		$fieldset->add($f);
-
-		//csv enclosure
-		$f = $this->modules->get('InputfieldText');
-		$f->name = 'csv_column_enclosure';
-		$f->label = $this->_('Column enclosure');
-		$f->notes = $this->_('When a value contains a delimeter, it must be enclosed by a character (typically a double quote character). If you are not sure what should go here, it is recommended you leave it at the default (").');
-		$f->value = '"';
-		if($f->value == '"') $f->collapsed = Inputfield::collapsedYes;
-		$f->attr('maxlength', 1);
-		$f->attr('size', 1);
-
-		$fieldset->add($f);
-
-		//csv paste
-		$f = $this->modules->get('InputfieldTextarea');
-		$f->name = "matrix_" . $this->field->name . "_csvpasted";
-		$f->label = $this->_('Paste in CSV Data');
-		$f->description = $this->_('Values entered here overwrite those in the matrix table!');
-		$f->notes = $this->_("The notes outlined above in 'CSV File' are applicable here.");
-		$f->collapsed = Inputfield::collapsedYes;
-
-		$fieldset->add($f);
-
-		$inputfields->add($fieldset);
-
-		return $out . $inputfields->render();
 	}
-	
+
+	/**
+	* Outputs javascript configuration for this module.
+	*
+	* @access protected
+	* @return String $scripts String to send to browser.
+	*
+	*/
+	protected function jsConfigs() {
+
+		//options for js 
+		#$options = array('config' => array("cdAlertMsg_$this->field->name" => $this->cdAlertMsg, 'matrixName' => ));
+		$options = array("config" => array(
+							"cdAlertMsg" => $this->cdAlertMsg, 
+							#"matrixName" => $this->field->name,
+
+						)
+		);
+		#$scripts = $this->config->js($this->className(), $options);
+		$scripts = $this->config->js($this->id, $options);
+
+		return $scripts;
+
+	}	
 	
 	/**
 	 * Process input for the values sent from the Matrix table for this page
 	 *
 	 */
 	public function ___processInput(WireInputData $input) {
+
 
 		if(!$this->page || !$this->field) {
 			throw new WireException("This inputfield requires that you set valid 'page' and 'field' properties to it."); 
@@ -455,11 +693,58 @@ class InputfieldMatrix extends Inputfield {
 
 		$csvFilename = $_FILES["{$name}_csvfile"]["name"];
 		$csvPasted = $input->{"{$name}_csvpasted"};
-		$csvDelimiter = $input->csv_column_separator;
-		$csvEnclosure = $input->csv_column_enclosure;
+		$csvDelimiter = $input->{"{$name}_csv_column_separator"};
+		$csvEnclosure = $input->{"{$name}_csv_column_enclosure"};
+		$csvExportBtn = $input->{"{$name}_export"};
 
-		//dealing with uploaded csv/txt file
-		if($csvFilename !='') {
+
+			######### - EXPORTING - #########
+		if($csvExportBtn) {
+
+			//get default rows and columns. Need this to ensure to export blank values as well to CSV, otherwise file will be skewed.
+			$rc = $this->findRowsColumns();
+
+			$rows = $rc['rows'];//PageArray
+			$columns = $rc['columns'];//PageArray	
+
+			$values = $this->attr('value');
+
+			$exportMatrix = array();
+
+			//limiting exports
+			$exportStart = (int) $input->{"{$name}_csv_export_from"};
+			$exportEnd= (int) $input->{"{$name}_csv_export_till"};
+
+			$i = 1;
+			//prepare export values
+			foreach($rows as $row) {
+				//if limiting row to start export from (inclusive)
+				if($exportStart && $exportStart > $i) {
+						$i++;					
+						continue;					
+				}
+
+				//if limiting row to stop export at (inclusive)
+				if($exportEnd && $exportEnd < $i) break;
+				foreach($columns as $column) {
+					//get each matrix value at given coordinates (WireArray)
+					$v = $values->get("rowLabel=$row->title, columnLabel=$column->title");
+					$value = $v ? $v->value : '';//force blank values export
+					$exportMatrix[$row->id][$this->_('Row Label')] = $row->title;
+					$exportMatrix[$row->id][$column->title] = $value;
+				}
+				$i++;
+			}
+
+ 			//execute export
+ 			$this->exportMatrixCSV($exportMatrix, $csvDelimiter, $csvEnclosure);        	
+
+		}
+
+		######### - IMPORTING/SAVING - #########
+
+		//if dealing with imported csv/txt file
+		elseif($csvFilename !='') {
 
 				//WireUpload stuff
 				$validExts = array('txt', 'csv');//allow only .csv and .txt files
@@ -494,8 +779,8 @@ class InputfieldMatrix extends Inputfield {
 				}
 
 				else {
-								$this->error($this->_('We did not find a valid file! Please retry.'));
-								return false;
+							$this->error($this->_('We did not find a valid file! Please retry.'));
+							return false;
 				}
 
 		}
@@ -514,11 +799,14 @@ class InputfieldMatrix extends Inputfield {
 					$matrices = $this->field->type->getBlankValue($this->page, $this->field);
 
 					$count = 0;//counter for values saved
+
+					//to check if saving blank values allowed (yes=1; no=2)
+					$saveBlankValues = $this->allowBlankValues;
 					
 					foreach($input->{"{$name}"} as $key => $value) {
 							
-							//if value empty, we skip the record; no need to save empty values!
-							if($value == '') continue;
+							//if value empty and saving blank values not allowed, we skip the record
+							if($saveBlankValues == 2 && !strlen(str_replace(' ', '', $value))) continue;
 
 							//$key is in the format R1234_C1234 reflecting row and column pages' IDs respectively
 							$rowCol = explode('_', $key);//[0]=>R1234, [1]=>C1234
@@ -540,7 +828,7 @@ class InputfieldMatrix extends Inputfield {
 					}//end foreach
 
 					//tell user how many values were saved
-					$this->message(sprintf(_n("Saved %d matrix value.", "Saved %d matrix values.", $count), $count));
+					$this->message($this->field->name . ': ' . sprintf(_n("Saved %d matrix value.", "Saved %d matrix values.", $count), $count));
 
 		}
 	
@@ -559,47 +847,25 @@ class InputfieldMatrix extends Inputfield {
 	}
 
 	/**
-	 * Prepare copy-pasted CSV matrix values for processing
+	 * Prepare copy-pasted or uploaded CSV matrix values for processing
 	 * These will either be processed using MatrixArray/Matrix or MySQL LOAD DATA INFILE
 	 *
 	 */
 	public function prepareCSV($csvRawData, $csvDelimiter, $csvEnclosure) {
 
-		//prepare some variables
-		$pages = wire('pages');
-		$page = $this->page;
-		$rowsParent = '';
-		$columnsParent = '';
-		
-		$parentRowColumnSelector = $this->parentRowColumnFieldName;//this property was set in FieldtypeMatrix getInputfield()
-		$rowSelector = $this->rowSelector;//this property was set in FieldtypeMatrix getInputfield()
-		$columnSelector = $this->columnSelector;//this property was set in FieldtypeMatrix getInputfield()
+		//rows and columns for this matrix
+		$rc = $this->findRowsColumns();
 
-		//if Page Field specified, we use that to find the children pages of the specified row and column parent pages respectively (this will match what is already in the matrix table)
-		if($parentRowColumnSelector) {
-
-				//rows parent
-				$rowsParent = $page->$parentRowColumnSelector->first();//the first selected page is treated as the row pages parent
-		
-				//columns parent
-				$columnsParent = $page->$parentRowColumnSelector->getNext($rowsParent);//the second selected page is treated as the column pages parent
-		
-				//find all matrix-row pages
-				$rowPages = $rowsParent->children;
-
-				//find all matrix-column pages
-				$columnPages = $columnsParent->children;
-
+		//if we didn't get an array back from findRowsColumns() it means errors were found. We output the returned 'error' strings
+		if(!is_array($rc)) {
+			$this->error($rc, Notice::allowMarkup);
+			return;
 		}
 
-		//if Page Field NOT specified, we use specified row/column selectors instead
+		//if we got here, it means no errors found and good to go
 		else {
-
-				//find all matrix-row pages
-				$rowPages = $pages->find($rowSelector);//ProcessWire will throw an exception here if the selector is not valid
-
-				//find all matrix-column pages
-				$columnPages = $pages->find($columnSelector);//ProcessWire will throw an exception here if the selector is not valid
+			$rowPages = $rc['rows'];
+			$columnPages = $rc['columns'];
 
 		}
 
@@ -617,8 +883,8 @@ class InputfieldMatrix extends Inputfield {
 
 		$data = array();
 		$i = 0;//rows counter
-		$j = 0;//columns counter
-
+		$j = 0;//columns counter		
+		
 		/*					
 		#### creating an array mirroring our db structure ###
 		save row->id, col->id, csv value as below:
@@ -637,7 +903,7 @@ class InputfieldMatrix extends Inputfield {
 		*/
 		
 		/*
-			++ if uploading/copy-pasting csv data, we'll use this array in one of two ways: ++
+			++ if importing/copy-pasting csv data, we'll use this array in one of two ways: ++
 
 			(1) if using LOAD DATA INFILE:				
 				- we need this step since our $csvRawData is in a matrix table format
@@ -665,13 +931,6 @@ class InputfieldMatrix extends Inputfield {
 					$cnt = count($data);
 		
 					foreach ($columns as $col) {
-
-							//if value not set OR if value set but empty, we skip it and the related column and move to the next column
-							//note, however, that we are not skipping blank lines wholesale as those may be intentional!
-							if( (!isset($csvData[$j])) || (isset($csvData[$j]) && !strlen(str_replace(' ', '', $csvData[$j]))) ) {
-									$j++;
-									continue;
-							}
 
 							//first, attempt to auto-detect char encoding of 'troublesome' characters
 							//then encode to UTF-8
@@ -710,12 +969,6 @@ class InputfieldMatrix extends Inputfield {
 				        
 						foreach ($columns as $col) {
 
-								//if value not set OR if value set but empty, we skip it and the related column and move to the next column
-								if( (!isset($csvData[$j])) || (isset($csvData[$j]) && !strlen(str_replace(' ', '', $csvData[$j]))) ) {
-										$j++;
-										continue;
-								}
-
 								$data[] = array((int)$rows[$i], (int)$col , $this->sanitizer->text($csvData[$j]));
 								$j++;
 								if($j == $cntCols) break;//if csv data columns exceed columns in matrix table we abort
@@ -748,7 +1001,7 @@ class InputfieldMatrix extends Inputfield {
 	}
 
 	/**
-	 * Process copy-pasted CSV matrix values using MatrixArray/Matrix method
+	 * Process copy-pasted and uploaded CSV matrix values using MatrixArray/Matrix method
 	 *
 	 */
 	public function processCSVMatrix($data) {
@@ -757,16 +1010,22 @@ class InputfieldMatrix extends Inputfield {
 
 		$count = 0;//counter for number of values saved
 
+		//to check if saving blank values allowed (yes=1; no=2)
+		$saveBlankValues = $this->allowBlankValues;
+		
 		//loop through the sanitized csv data. Empty values have already been removed in prepareCSV()
 		foreach ($data as $d) {
 		  
 				#our row $page->id is at index[0] in the inner array $d
 				#our column $page->id is at index[1] in the inner array $d
-				#our matrix intersection/cell is the $value and it is at index[2]
+				#our matrix intersection/cell is the $value and it is at index[2] in array $d
 
 					//create a new matrix and add it to our matrices
 					$m = new Matrix();
 
+					//skip blank values if saving them not allowed
+					if($saveBlankValues == 2 && !strlen(str_replace(' ', '', $d[2]))) continue;
+					
 					//these were already sanitized in prepareCSV() [and will be again in Matrix::set()]
 					$m->row		= 	$d[0];//row page->id
 					$m->column 	= 	$d[1];//column page->id
@@ -778,7 +1037,7 @@ class InputfieldMatrix extends Inputfield {
 
 		}//end foreach $data as $d
 
-		$this->message(sprintf(_n("Saved %d matrix value.", "Saved %d matrix values.", $count), $count));//tell user how many values were saved
+		$this->message($this->field->name . ': ' . sprintf(_n("Saved %d matrix value.", "Saved %d matrix values.", $count), $count));//tell user how many values were saved
 
 		return $matrices;//return the matrices object
 
@@ -793,6 +1052,9 @@ class InputfieldMatrix extends Inputfield {
 		//prepare some variables
 		$page = $this->page;
 
+		//to check if saving blank values allowed (yes=1; no=2)
+		$saveBlankValues = $this->allowBlankValues;
+
 		$csvFilename = $page->filesManager()->path() . 'matrix-data.csv'; //this pages /assets/files/ folder
 
 		//deal with Mac line endings
@@ -801,7 +1063,13 @@ class InputfieldMatrix extends Inputfield {
 		//force create and write to a temp 'matrix-data.csv' file. we'll delete it later
 		$handle = fopen($csvFilename, 'w+');
 
-		foreach ($data as $line) fputcsv($handle, $line, $csvDelimiter, $csvEnclosure);//write csv values to matrix-data.csv
+		foreach ($data as $line) {
+
+			//skip blank values if saving them not allowed
+			if($saveBlankValues == 2 && !strlen(str_replace(' ', '', $line[2]))) continue;
+
+			fputcsv($handle, $line, $csvDelimiter, $csvEnclosure);//write csv values to matrix-data.csv
+		}
 
 		fclose($handle);//close the resource stream
 		ini_set('auto_detect_line_endings', false);//close auto detect line endings
@@ -852,10 +1120,57 @@ class InputfieldMatrix extends Inputfield {
 
 		if(is_file($csvFilename)) unlink($csvFilename);//delete the matrix-data.csv file we created earlier for LOAD DATA INFILE
 
-		$this->message(sprintf(_n("Saved %d matrix value.", "Saved %d matrix values.", $count), $count));//tell user how many values were saved
+		$this->message($this->field->name . ': ' . sprintf(_n("Saved %d matrix value.", "Saved %d matrix values.", $count), $count));//tell user how many values were saved
 
 	}
 
+	/**
+	* Export saved/DB matrix to a CSV file for download.
+	*
+	* This is useful if user wants to user data for other purposes.
+	* Also, in some cases,it is easier to edit data in a spreadsheet then re-import to the matrix.
+	* 
+	* @access private
+	* @param Array $data Saved/DB matrix values to export to CSV.
+	* @param String $csvDelimiter CSV data delimiter.
+	* @param String $csvEnclosure CSV data enclosure.
+	*
+	*/
+	private function exportMatrixCSV($data, $csvDelimiter, $csvEnclosure) {
+
+		if (count($data) == 0) return null;
+
+		date_default_timezone_set($this->config->timezone);//get current timezone
+		#$dateFormat = $this->config->dateFormat;//get default date format (@note: not using since may contain illegal filename characters for different operating systems)
+		$date = date('Y-m-d-H-i-s', time());
+
+		//name csv files as pageName_matrixFieldName_currentTime.csv
+		$csvFileName = $this->page->name . '_' . $this->attr('name') . '_' . $date . '.csv';
+
+		//force download. disposition / encoding on response body
+		header('Content-type: text/csv');
+		header("Content-Disposition: attachment;filename={$csvFileName}");
+
+		//disable caching
+		header('Pragma: no-cache');
+		header('Expires: 0');
+
+		//open resource stream
+		$f = fopen("php://output", 'w');
+
+		//keys of associative array $data will be the column headers
+		fputcsv($f, array_keys(reset($data)), $csvDelimiter, $csvEnclosure);
+
+		//write to csv file
+		foreach ($data as $row) fputcsv($f, $row, $csvDelimiter, $csvEnclosure);
+
+		//close resource
+		fclose($f);
+		
+		//stop any further output
+		exit;		
+
+	}
 
 	/**
 	 * Attempt to auto-encode unrecognised characters during fopen operations.
