@@ -31,7 +31,7 @@ class FieldtypeMatrix extends FieldtypeMulti {
 		return array(
 			'title' => 'Matrix',
 			'author' => 'Francis Otieno (Kongondo)',
-			'version' => 102,
+			'version' => 103,
 			'href' => 'https://processwire.com/talk/topic/8581-module-matrix-fieldtype-inputfield/',
 			'summary' => 'Matrix: Field that stores values in a 2D-matrix table in a page.',
 			'installs' => 'InputfieldMatrix', 
@@ -75,10 +75,23 @@ class FieldtypeMatrix extends FieldtypeMulti {
 		//Holds the name of a page field from which to grab parent of matrix row + column pages
 		//needs two pages to be selected. First=row pages parent; Second=column pages parent
 		$inputfield->set('parentRowColumnFieldName', $field->parentRowColumnFieldName);
-		$inputfield->set('rowLabelFieldName', $field->rowLabelFieldName);//we'll use this to label our matrix-row headers
-		$inputfield->set('columnLabelFieldName', $field->columnLabelFieldName);//ditto for matrix-column headers
+
+		//allow saving of blank values
+		$inputfield->set('allowBlankValues', $field->allowBlankValues);//we'll use this to label our matrix-row headers
+
+		//show matrix rows numbering
+		$inputfield->set('showRowsNumbering', $field->showRowsNumbering);//we'll use this to label our matrix-row headers
+
+		//clear data alert message
+		$inputfield->set('cdAlertMsg', $field->cdAlertMsg);
+		
 		//determine if csv data should be saved using MySQL's fast LOAD DATA INFILE
 		$inputfield->set('loadDataInfile', $field->loadDataInfile);
+
+		//row and column labels to render
+		$inputfield->set('rowLabelFieldName', $field->rowLabelFieldName);//we'll use this to label our matrix-row headers
+		$inputfield->set('columnLabelFieldName', $field->columnLabelFieldName);//ditto for matrix-column headers
+
 
 		return $inputfield;
 
@@ -155,6 +168,53 @@ class FieldtypeMatrix extends FieldtypeMulti {
 		$f->label = $this->_('Matrix Row and Column Parent Pages');
 		$f->description = $this->_('Enter the name of a Page Field. This overrides the above two selectors and any custom PHP code. It allows you to reuse this matrix field in several pages using various combinations of row and column pages.');
 		$f->notes = $this->_('This has to be a Multiplepages Field. The first selected page in the specified Page Field will refer to the parent pages for matrix rows and the second for matrix columns. Any other pages added will be ingored. From a usability point of view, it is probably best to use an AsmSelect Page Field.');
+		
+		$inputfields->append($f);
+
+		//radios: allow blank values
+		$f = new InputfieldRadios();
+		$f = $this->modules->get('InputfieldRadios');
+		$f->attr('name', 'allowBlankValues');
+		$f->attr('value', $field->allowBlankValues ? $field->allowBlankValues : 2);
+		$f->label =  $this->_('Save Blank Matrix Values');
+		$f->description = $this->_('Should blank matrix values be saved to the database or be discarded?');
+		$f->notes = $this->_('Saving blank values requires more database space than not saving them. However, if you have a need to save blank values, then allow saving of such values.');
+
+		$radioOptions = array (
+						 1 => __('Yes'),
+						 2 => __('No'),
+	 	);
+
+		$f->addOptions($radioOptions);		
+		
+		$inputfields->append($f);
+
+		//radios: show numbered rows
+		$f = new InputfieldRadios();
+		$f = $this->modules->get('InputfieldRadios');
+		$f->attr('name', 'showRowsNumbering');
+		$f->attr('value', $field->showRowsNumbering ? $field->showRowsNumbering : 2);
+		$f->label =  $this->_('Show Numbered Matrix Rows');
+		$f->description = __('Enable this if you want matrix rows to be numbered.');
+
+		$radioOptions = array (
+						 1 => __('Yes'),
+						 2 => __('No'),
+	 	);
+
+		$f->addOptions($radioOptions);		
+		
+		$inputfields->append($f);
+
+		//alert message on click 'Clear Data'
+		//reminds them that no data is lost until they save
+		//if empty, we show no alert; if filled, we configure alerts
+		$f = $this->modules->get("InputfieldText");
+		$f->attr('name', 'cdAlertMsg');
+		$f->attr('value', $field->cdAlertMsg);
+		$f->label = $this->_('Matrix Clear Data Alert Message');
+		$f->description = $this->_('Enter text to alert users when they click the button \'Clear Data\'s that no data is lost until they click save.');
+		$f->notes = $this->_('This is optional. If no text is entered here, not alert will be shown. Only enter text if you want to show alerts. Example alert: Until you save the page, your old data still exists. Reload the page without saving if you want it back.');
 		
 		$inputfields->append($f);
 
