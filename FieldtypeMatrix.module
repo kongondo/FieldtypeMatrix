@@ -31,7 +31,7 @@ class FieldtypeMatrix extends FieldtypeMulti {
 		return array(
 			'title' => 'Matrix',
 			'author' => 'Francis Otieno (Kongondo)',
-			'version' => 103,
+			'version' => 104,
 			'href' => 'https://processwire.com/talk/topic/8581-module-matrix-fieldtype-inputfield/',
 			'summary' => 'Matrix: Field that stores values in a 2D-matrix table in a page.',
 			'installs' => 'InputfieldMatrix', 
@@ -75,6 +75,15 @@ class FieldtypeMatrix extends FieldtypeMulti {
 		//Holds the name of a page field from which to grab parent of matrix row + column pages
 		//needs two pages to be selected. First=row pages parent; Second=column pages parent
 		$inputfield->set('parentRowColumnFieldName', $field->parentRowColumnFieldName);
+
+		//allow saving of blank values
+		$inputfield->set('defaultImportMode', $field->defaultImportMode);//default import mode (append vs. overwrite)
+		
+		//ignore first row if importing csv file/copy pasted data
+		$inputfield->set('ignoreFirstRow', $field->ignoreFirstRow);//default is ignore
+
+		//ignore first column if importing csv file/copy pasted data
+		$inputfield->set('ignoreFirstColumn', $field->ignoreFirstColumn);//default is ignore
 
 		//allow saving of blank values
 		$inputfield->set('allowBlankValues', $field->allowBlankValues);//we'll use this to label our matrix-row headers
@@ -170,9 +179,59 @@ class FieldtypeMatrix extends FieldtypeMulti {
 		$f->notes = $this->_('This has to be a Multiplepages Field. The first selected page in the specified Page Field will refer to the parent pages for matrix rows and the second for matrix columns. Any other pages added will be ingored. From a usability point of view, it is probably best to use an AsmSelect Page Field.');
 		
 		$inputfields->append($f);
+		
+		//radios: default import mode
+		$f = $this->modules->get('InputfieldRadios');
+		$f->attr('name', 'defaultImportMode');
+		$f->attr('value', $field->defaultImportMode ? $field->defaultImportMode : 1);
+		$f->label =  $this->_('Import Mode');
+		$f->description = $this->_('Set the default CSV data import mode.');
+		$f->notes = $this->_('Append will import and add imported values beginning at the first available blank row. If there are non-empty rows beneath it, they will be overwritten. Overwrite will replace all saved values with the new imported ones. These alternatives can be temporarily changed when editing a matrix.');
+
+		$radioOptions = array (
+						 1 => __('Append'),
+						 2 => __('Overwrite'),
+	 	);
+
+		$f->addOptions($radioOptions);
+
+		$inputfields->append($f);
+
+		//radios: ignore first row
+		$f = $this->modules->get('InputfieldRadios');
+		$f->attr('name', 'ignoreFirstRow');
+		$f->attr('value', $field->ignoreFirstRow ? $field->ignoreFirstRow : 1);
+		$f->label =  $this->_('Ignore First Row');
+		$f->description = $this->_('Ignore the first row of the CSV data.');
+		$f->notes = $this->_('Useful if the first CSV row contains column headers/labels.');
+
+		$radioOptions = array (
+						 1 => __('Yes'),
+						 2 => __('No'),
+	 	);
+
+		$f->addOptions($radioOptions);
+
+		$inputfields->append($f);
+
+		//radios: ignore first column
+		$f = $this->modules->get('InputfieldRadios');
+		$f->attr('name', 'ignoreFirstColumn');
+		$f->attr('value', $field->ignoreFirstColumn ? $field->ignoreFirstColumn : 1);
+		$f->label =  $this->_('Ignore First Column');
+		$f->description = $this->_('Ignore the first column of the CSV data.');
+		$f->notes = $this->_('Useful if the first CSV column contains row headers/labels..');
+
+		$radioOptions = array (
+						 1 => __('Yes'),
+						 2 => __('No'),
+	 	);
+
+		$f->addOptions($radioOptions);
+
+		$inputfields->append($f);
 
 		//radios: allow blank values
-		$f = new InputfieldRadios();
 		$f = $this->modules->get('InputfieldRadios');
 		$f->attr('name', 'allowBlankValues');
 		$f->attr('value', $field->allowBlankValues ? $field->allowBlankValues : 2);
@@ -190,7 +249,6 @@ class FieldtypeMatrix extends FieldtypeMulti {
 		$inputfields->append($f);
 
 		//radios: show numbered rows
-		$f = new InputfieldRadios();
 		$f = $this->modules->get('InputfieldRadios');
 		$f->attr('name', 'showRowsNumbering');
 		$f->attr('value', $field->showRowsNumbering ? $field->showRowsNumbering : 2);
