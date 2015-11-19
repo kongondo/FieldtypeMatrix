@@ -6,7 +6,7 @@ The matrix table is made up of row and column headers of pages whose individual 
 <img src='https://github.com/kongondo/FieldtypeMatrix/raw/master/screenshot1.png' />
 <img src='https://github.com/kongondo/FieldtypeMatrix/raw/master/screenshot2.png' />
 
-Pages for building the rows/columns can be selected in one of two ways. **These methods are set up in the Field's 'Details Tab':**
+Pages for building the rows/columns can be selected in one of three ways. **These methods are set up in the Field's 'Details Tab':**
 
 **1. Use a valid ProcessWire selector.**
 Here you enter valid ProcessWire selectors for finding pages to build your matrix rows and columns respectively in the relevant input fields found in your matrix field's 'Details Tab'.
@@ -14,8 +14,12 @@ If you use this method, it means all instances of the field across different tem
 This also means that if you wanted to create matrices with different rows and columns, you would have to create a new field for each.
 
 
-**2. Specify a Multiplepage field for row/column parent pages selections**
+**2. Use custom PHP code to return row/column pages**
 If used, this method overrides method #1 above.
+This allows you to specify valid PHP code to find pages for the matrix rows and/or columns. The PHP statement has access to the $page and $pages API variables, where $page refers to the page being edited. The snippet should only return a Page or PageArray. If it returns a Page, children of that Page are used as column pages.
+
+**3. Specify a Multiplepage field for row/column parent pages selections**
+If used, this method overrides method #1 and #2 above.
 The method allows you to reuse the same matrix field to create matrix tables made up of different rows and columns on a page by page basis.
 To use the method, you first specify the name (e.g. **product_select**) of a valid **Multiplepage field** that will hold the parent pages of **both your rows and columns pages**.
 Make sure to first add that Multiplepage field (**product_select**) to the template(s) of the page(s) where you will be building your matrices.
@@ -162,6 +166,29 @@ $page->products->find("column=$age, value>=25");
 Other more complex queries are possible, e.g. find all products that are either red or purple in colour, come in x-large size and are priced less than $50.
 
 ##Changelog
+
+###Version 1.0.4
+Added import modes for file/copy-pasted CSV, 'append' and 'overwrite'.
+Added option to ignore first row and/or column for imported CSV data.
+Added ability to export only selected rows.
+Added ability to use shift+click to select a range of rows.
+
+###Version 1.0.3
+Export matrix to CSV.
+Optional configurable alert message to show after clicking 'clear data button'.
+Added option to save empty values.
+Added option to show matrix row numbers.
+Added checkboxes for row selections.
+Clear data button only clears data of selected rows.
+
+###Version 1.0.2
+Add in-memory method getValue() to get the value at the given coordinates (row,column). E.g. getValue(row, column). Row/Column arguments can be ID, path, title or Page object.
+
+###Version 1.0.1
+Added ability to specify column/row pages using custom PHP code.
+Configurable browser warning for matrix table reset button.
+Added two in-memory properties rowLabel and columnLabel to return 'user-friendly' row/column names (e.g. echo $matrix->rowLabel to render 'red', 'small', etc.).
+Added two methods getRow() and getColumn() (in-memory) to search and get a single matrix row/column by path, title, ID or Page object.
 
 ###Version 1.0.0
 Changed version to 1.
