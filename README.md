@@ -14,11 +14,11 @@ If you use this method, it means all instances of the field across different tem
 This also means that if you wanted to create matrices with different rows and columns, you would have to create a new field for each.
 
 
-**2. Use custom PHP code to return row/column pages**
+**2. Use custom PHP code to return row/column pages.**
 If used, this method overrides method #1 above.
 This allows you to specify valid PHP code to find pages for the matrix rows and/or columns. The PHP statement has access to the $page and $pages API variables, where $page refers to the page being edited. The snippet should only return a Page or PageArray. If it returns a Page, children of that Page are used as column pages.
 
-**3. Specify a Multiplepage field for row/column parent pages selections**
+**3. Specify a Multiplepage field for row/column parent pages selections.**
 If used, this method overrides method #1 and #2 above.
 The method allows you to reuse the same matrix field to create matrix tables made up of different rows and columns on a page by page basis.
 To use the method, you first specify the name (e.g. **product_select**) of a valid **Multiplepage field** that will hold the parent pages of **both your rows and columns pages**.
