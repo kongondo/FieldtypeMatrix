@@ -24,6 +24,8 @@ class Matrix extends WireData {
 		$this->set('row', '');
 		$this->set('column', '');
 		$this->set('value', '');
+		$this->set('rowLabel', '');
+		$this->set('columnLabel', '');
 
 	}
 
@@ -36,19 +38,11 @@ class Matrix extends WireData {
 		if($key == 'page') {
 			$this->page = $value; 
 			return $this;
-		} 
-
+		}
 		//sanitize values as integers
-		elseif($key == 'row' || $key == 'column') {				
-				
-				$value = (int) $value; 
-		}
-
+		elseif($key == 'row' || $key == 'column') $value = (int) $value; 
 		//regular text sanitizer
-		elseif($key == 'value') {			
-				
-				$value = $this->sanitizer->text($value); 
-		}
+		elseif($key == 'value' || $key == 'rowLabel' || $key == 'columnLabel') $value = $this->sanitizer->text($value); 
 
 		return parent::set($key, $value);//back to WireData
 	}
@@ -63,13 +57,11 @@ class Matrix extends WireData {
 
 		//if the page's output formatting is on, then we'll return sanitized values
 		if($this->page && $this->page->of()) {
-				
-				//sanitize our page IDs as integers
-				if($key == 'row' || $key == 'column') $value = (int) $value; 
-				
-				//regular text sanitizer for our values
-				if($key == 'value') $value = $this->sanitizer->text($value);
 
+			//for rows and columns show user friendly output (titles rather than IDs)
+			if($key == 'row' || $key == 'column') $value = (int) $value;			
+			//regular text sanitizer for our values + row + column headers
+			elseif($key == 'value' || $key == 'rowLabel' || $key == 'columnLabel') $value = $this->sanitizer->text($value);
 		}
 
 		return $value; 
@@ -89,10 +81,10 @@ class Matrix extends WireData {
 		//turn on output formatting for our rendering (if it's not already on)
 		if(!$of) $this->page->of(true);
 
-		$out = "<p>" . 	$pages->get($this->row)->title . "<br>" . 
-						$pages->get($this->column)->title . "<br>
+		$out = "<p>" . 	$this->rowLabel . "<br>" .
+						$this->columnLabel . "<br>
 						<em>$this->value</em><br>					
-				</p>";	
+		</p>";	
 		
 		if(!$of) $this->page->of(false);
 
@@ -109,4 +101,3 @@ class Matrix extends WireData {
 	}
 
 }
-

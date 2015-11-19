@@ -1,48 +1,79 @@
-table.InputfieldMatrix {
+table.Matrix {width: 100%;}
 
-	width: 100%;
-}
+li.InputfieldMatrix table tr {border: none;}
 
-.InputfieldMatrix table tr {
-	border: none; 
-}
-
-.InputfieldMatrix th {
+table.Matrix th {
 	padding-bottom: 5px;
 	font-weight: bold; 
 }
 
-.InputfieldMatrix tr:hover td {
-	background: #eee; 
-}
+table.Matrix tr:hover td, table.Matrix tr:hover th.MatrixRowNumber {background: #EEE;}
 
-.InputfieldMatrix input[type=text] {
-	width: 100%; 
-}
-.InputfieldMatrix th,
-.InputfieldMatrix td {
+li.InputfieldMatrix table tr.highlight_row {background: #E8E8E8;}
+li.InputfieldMatrix table tr.highlight_last_blank :not(th) {background: #FFFFDD; background: #F2FAFF; background: #FFFFEA !important;}
+
+table.Matrix input[type=text] {width: 100%;}
+
+table.Matrix th,
+table.Matrix td {
 	padding: 6px 2px; 
 	border-bottom: 1px solid #ddd; 
 }
 
-
-.InputfieldMatrix tbody > tr > td.MatrixRowHeader {
-
+table.Matrix tbody > tr > td.MatrixRowHeader {
 	padding-right: 10px;
+	padding-left: 5px;
 }
 
-
-/* Button to clear all/reset matrix values before save */
-.InputfieldMatrixReset {
+/* Button to clear/reset matrix values for selected rows + for data export*/
+li.InputfieldMatrix button.MatrixReset,
+li.InputfieldMatrix button.MatrixResetReno,
+li.InputfieldMatrix button.MatrixExport,
+li.InputfieldMatrix button.MatrixExportReno {
 	float: right;
-	margin-bottom: 20px;
-
+	margin: 0 0 20px 3px;
+	padding: 0.3em 0.4em;
+	font-weight: normal;
 }
 
-.InputfieldMatrixReset:hover {
-	cursor: pointer;
-
+/*Reset and Export buttons for Reno need different padding*/
+li.InputfieldMatrix button.MatrixResetReno > span,
+li.InputfieldMatrix button.MatrixExportReno > span{
+	padding: 0;
 }
+
+/*import csv mode, ignore first row/column*/
+span.MatrixRadio {
+	display: inline-block;
+	margin-right: 2.5em;
+}
+
+span.MatrixRadio span {
+	font-weight: bold;
+	display: inline-block;
+}
+
+label.MatrixRadio {
+	display: inline-block;
+	padding-bottom: 1em;
+	margin: 0 0.125em 0 0.1em;
+}
+
+input[type="radio"].MatrixRadio {
+	margin-top: -1px;
+	vertical-align: middle;
+}
+
+/*Checkbox in last column*/
+li.InputfieldMatrix input[type=checkbox].MatrixCheckbox, li.InputfieldMatrix input[type=checkbox].MatrixToggleAll {margin-left: 3px;}
+
+/*custom alert box jQuery UI Dialog*/
+div.alert {border-radius: 5px;}
+div.alert p {background: white; padding: 10px; margin: 10px; color: #395057;}
+div.ui-dialog,
+div.ui-dialog .ui-dialog-titlebar {background: #2F4248 !important;}
+
+
 
 
 
